@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { Screen } from './types'
 import './App.css'
+import StartScreen from './screens/StartScreen'
 
 // Placeholder components until real ones are created
-const StartScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
-  <div><h1>5 Second Rule</h1><button onClick={() => onNavigate('setup')}>Нова гра</button></div>
-)
 const SetupScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
   <div><h2>Setup</h2><button onClick={() => onNavigate('game')}>Start</button></div>
 )
