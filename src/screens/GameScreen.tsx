@@ -62,7 +62,7 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
           <div className="special-message">{specialMessage}</div>
         )}
 
-        <div className="question-card">
+        <div className={`question-card ${state.phase === 'judging' ? 'shake' : ''}`}>
           {state.currentQuestion?.text}
         </div>
 
