@@ -64,7 +64,13 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
             className="player-indicator"
             style={{ backgroundColor: currentPlayer.color }}
           />
-          {currentPlayer.name}
+          <div className="player-name-stats">
+            <span className="player-name">{currentPlayer.name}</span>
+            <span className="player-mini-stats">
+              {state.playerStats[currentPlayer.name]?.correct || 0} |{' '}
+              {state.playerStats[currentPlayer.name]?.wrong || 0}
+            </span>
+          </div>
         </div>
 
         {specialMessage && (

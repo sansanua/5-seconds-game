@@ -29,6 +29,24 @@
   font-weight: bold;
 }
 
+.player-name-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.player-name {
+  line-height: 1.2;
+}
+
+.player-mini-stats {
+  font-size: 0.75rem;
+  font-weight: normal;
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.85);
+}
+
 .player-indicator {
   width: 24px;
   height: 24px;
