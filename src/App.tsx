@@ -1,35 +1,36 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { Screen } from './types'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Placeholder components until real ones are created
+const StartScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
+  <div><h1>5 Second Rule</h1><button onClick={() => onNavigate('setup')}>Нова гра</button></div>
+)
+const SetupScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
+  <div><h2>Setup</h2><button onClick={() => onNavigate('game')}>Start</button></div>
+)
+const GameScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
+  <div><h2>Game</h2><button onClick={() => onNavigate('victory')}>Win</button></div>
+)
+const VictoryScreen = ({ onNavigate }: { onNavigate: (s: Screen) => void }) => (
+  <div><h2>Victory!</h2><button onClick={() => onNavigate('start')}>Home</button></div>
+)
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function App() {
+  const [screen, setScreen] = useState<Screen>('start')
+
+  const navigate = (newScreen: Screen) => setScreen(newScreen)
+
+  switch (screen) {
+    case 'start':
+      return <StartScreen onNavigate={navigate} />
+    case 'setup':
+      return <SetupScreen onNavigate={navigate} />
+    case 'game':
+      return <GameScreen onNavigate={navigate} />
+    case 'victory':
+      return <VictoryScreen onNavigate={navigate} />
+  }
 }
 
 export default App
