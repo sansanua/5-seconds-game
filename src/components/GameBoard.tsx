@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Cell, Player } from '../types'
 import './GameBoard.css'
 
 interface Props {
   board: Cell[]
   players: Player[]
+}
+
+interface CellPosition {
+  x: number
+  y: number
 }
 
 const SPECIAL_ICONS: Record<string, string> = {
@@ -36,9 +41,44 @@ const SPECIAL_DESCRIPTIONS: Record<string, { name: string; description: string }
 
 export default function GameBoard({ board, players }: Props) {
   const [selectedCell, setSelectedCell] = useState<string | null>(null)
+  const [cellPositions, setCellPositions] = useState<CellPosition[]>([])
+  const boardRef = useRef<HTMLDivElement>(null)
+  const cellRefs = useRef<(HTMLDivElement | null)[]>([])
 
-  const getPlayersOnCell = (index: number) =>
-    players.filter(p => p.position === index)
+  // Calculate cell positions for absolute token positioning
+  const updateCellPositions = useCallback(() => {
+    if (!boardRef.current) return
+
+    const boardRect = boardRef.current.getBoundingClientRect()
+    const positions: CellPosition[] = []
+
+    cellRefs.current.forEach((cellEl) => {
+      if (cellEl) {
+        const cellRect = cellEl.getBoundingClientRect()
+        positions.push({
+          x: cellRect.left - boardRect.left + cellRect.width / 2,
+          y: cellRect.top - boardRect.top + cellRect.height / 2
+        })
+      }
+    })
+
+    setCellPositions(positions)
+  }, [])
+
+  // Use ResizeObserver for position updates
+  useEffect(() => {
+    if (!boardRef.current) return
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateCellPositions()
+    })
+
+    resizeObserver.observe(boardRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [updateCellPositions, board.length])
 
   const handleCellClick = (specialType: string | undefined) => {
     if (specialType) {
@@ -48,12 +88,17 @@ export default function GameBoard({ board, players }: Props) {
 
   const closeTooltip = () => setSelectedCell(null)
 
+  // Group players by position for stacking
+  const getPlayersAtPosition = (position: number) =>
+    players.filter(p => p.position === position)
+
   return (
-    <div className="game-board">
+    <div className="game-board" ref={boardRef}>
       <div className="board-track">
         {board.map((cell, index) => (
           <div
             key={index}
+            ref={(el) => { cellRefs.current[index] = el }}
             className={`cell ${cell.type}${cell.specialType ? ' clickable' : ''}`}
             style={cell.type === 'special' && cell.specialType ? {
               backgroundColor: SPECIAL_COLORS[cell.specialType]
@@ -66,20 +111,38 @@ export default function GameBoard({ board, players }: Props) {
             {index === board.length - 1 && (
               <span className="cell-icon">🏁</span>
             )}
-            <div className="cell-players">
-              {getPlayersOnCell(index).map((player) => (
-                <div
-                  key={player.name}
-                  className="player-token"
-                  style={{ backgroundColor: player.color }}
-                  title={player.name}
-                >
-                  {player.name[0].toUpperCase()}
-                </div>
-              ))}
-            </div>
           </div>
         ))}
+      </div>
+
+      {/* Animated player tokens layer */}
+      <div className="player-tokens-layer">
+        {players.map((player) => {
+          const position = cellPositions[player.position]
+          if (!position) return null
+
+          // Calculate offset for multiple players on same cell
+          const playersAtSameCell = getPlayersAtPosition(player.position)
+          const playerIndex = playersAtSameCell.findIndex(p => p.name === player.name)
+          const totalAtCell = playersAtSameCell.length
+          const offsetX = totalAtCell > 1
+            ? (playerIndex - (totalAtCell - 1) / 2) * 14
+            : 0
+
+          return (
+            <div
+              key={player.name}
+              className="player-token animated"
+              style={{
+                backgroundColor: player.color,
+                transform: `translate(${position.x + offsetX - 10}px, ${position.y + 10}px)`
+              }}
+              title={player.name}
+            >
+              {player.name[0].toUpperCase()}
+            </div>
+          )
+        })}
       </div>
 
       {selectedCell && SPECIAL_DESCRIPTIONS[selectedCell] && (
