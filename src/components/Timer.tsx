@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import './Timer.css'
 
 interface Props {
-  duration: 5 | 3
+  duration: 5 | 3 | 10
   isRunning: boolean
   onComplete: () => void
 }

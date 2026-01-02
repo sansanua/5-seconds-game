@@ -2,6 +2,7 @@ export interface Player {
   name: string
   color: string
   position: number
+  isChild: boolean
 }
 
 export interface Cell {
@@ -12,6 +13,7 @@ export interface Cell {
 export interface Question {
   id: number
   text: string
+  forKids: boolean
 }
 
 export interface SwapInfo {
@@ -30,10 +32,11 @@ export interface GameState {
   boardLength: number
   phase: GamePhase
   currentQuestion: Question | null
-  timerDuration: 5 | 3
+  timerDuration: 5 | 3 | 10
   skipNextTurn: number[]
   doubleQuestion: boolean
   questionsQueue: Question[]
+  kidsQuestionsQueue: Question[]
   winner: Player | null
   swapInfo: SwapInfo | null
 }

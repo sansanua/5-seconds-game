@@ -4,6 +4,8 @@ import type { GameState, Player, Question, SwapInfo } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
 
+const kidsQuestions = allQuestions.filter(q => q.forKids)
+
 type GameAction =
   | { type: 'START_TIMER' }
   | { type: 'TIMER_END' }
@@ -24,26 +26,58 @@ function getNextPlayerIndex(state: GameState): number {
   return next
 }
 
-function getNextQuestion(state: GameState): { question: Question; queue: Question[] } {
-  let queue = state.questionsQueue
-  if (queue.length === 0) {
-    queue = shuffle([...allQuestions])
+function getNextQuestion(state: GameState, forPlayer?: Player): {
+  question: Question
+  queue: Question[]
+  kidsQueue: Question[]
+} {
+  const player = forPlayer || state.players[state.currentPlayerIndex]
+
+  if (player.isChild) {
+    // Kids get only kids questions
+    let kidsQueue = state.kidsQuestionsQueue
+    if (kidsQueue.length === 0) {
+      // Reshuffle kids questions if empty
+      kidsQueue = shuffle([...kidsQuestions])
+      if (kidsQueue.length === 0) {
+        // Fallback: no kids questions, use all questions
+        console.warn('No kids questions available, using all questions')
+        let queue = state.questionsQueue
+        if (queue.length === 0) {
+          queue = shuffle([...allQuestions])
+        }
+        const [question, ...rest] = queue
+        return { question, queue: rest, kidsQueue: [] }
+      }
+    }
+    const [question, ...rest] = kidsQueue
+    return { question, queue: state.questionsQueue, kidsQueue: rest }
+  } else {
+    // Adults get all questions
+    let queue = state.questionsQueue
+    if (queue.length === 0) {
+      queue = shuffle([...allQuestions])
+    }
+    const [question, ...rest] = queue
+    return { question, queue: rest, kidsQueue: state.kidsQuestionsQueue }
   }
-  const [question, ...rest] = queue
-  return { question, queue: rest }
 }
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'START_TIMER': {
-      const currentCell = state.board[state.players[state.currentPlayerIndex].position]
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const currentCell = state.board[currentPlayer.position]
       const isFast = currentCell.type === 'special' && currentCell.specialType === 'fast'
       const isDouble = currentCell.type === 'special' && currentCell.specialType === 'double'
+
+      // Kids always get 10 seconds, adults get 5 or 3 (fast cell)
+      const timerDuration = currentPlayer.isChild ? 10 : (isFast ? 3 : 5)
 
       return {
         ...state,
         phase: 'timer',
-        timerDuration: isFast ? 3 : 5,
+        timerDuration,
         doubleQuestion: isDouble
       }
     }
@@ -90,7 +124,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       // Check for winner
       const winner = newPosition >= state.board.length - 1 ? newPlayers[state.currentPlayerIndex] : null
-      const { question, queue } = getNextQuestion(state)
+      const nextPlayerIndex = winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
+      const nextPlayer = newPlayers[nextPlayerIndex]
+      const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
 
       return {
         ...state,
@@ -98,44 +134,50 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: winner ? 'effect' : 'waiting',
         winner,
         skipNextTurn: newSkipList,
-        currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentPlayerIndex: nextPlayerIndex,
         currentQuestion: winner ? state.currentQuestion : question,
         questionsQueue: winner ? state.questionsQueue : queue,
+        kidsQuestionsQueue: winner ? state.kidsQuestionsQueue : kidsQueue,
         doubleQuestion: false
       }
     }
 
     case 'ANSWER_WRONG': {
-      const { question, queue } = getNextQuestion(state)
       const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+      const nextPlayerIndex = getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
+      const nextPlayer = state.players[nextPlayerIndex]
+      const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
 
       return {
         ...state,
         phase: 'waiting',
-        currentPlayerIndex: getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentPlayerIndex: nextPlayerIndex,
         currentQuestion: question,
         questionsQueue: queue,
+        kidsQuestionsQueue: kidsQueue,
         skipNextTurn: newSkipList,
         doubleQuestion: false
       }
     }
 
     case 'NEXT_QUESTION': {
-      const { question, queue } = getNextQuestion(state)
+      const { question, queue, kidsQueue } = getNextQuestion(state)
       return {
         ...state,
         currentQuestion: question,
-        questionsQueue: queue
+        questionsQueue: queue,
+        kidsQuestionsQueue: kidsQueue
       }
     }
 
     case 'SKIP_QUESTION': {
       // Skip question without penalty - just get next question for same player
-      const { question, queue } = getNextQuestion(state)
+      const { question, queue, kidsQueue } = getNextQuestion(state)
       return {
         ...state,
         currentQuestion: question,
         questionsQueue: queue,
+        kidsQuestionsQueue: kidsQueue,
         phase: 'waiting'
       }
     }
@@ -175,7 +217,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
       const winner = newPosition >= state.board.length - 1 ? newPlayers[state.currentPlayerIndex] : null
       const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
-      const { question, queue } = getNextQuestion(state)
+      const nextPlayerIndex = winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
+      const nextPlayer = newPlayers[nextPlayerIndex]
+      const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
 
       return {
         ...state,
@@ -183,9 +227,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         phase: winner ? 'effect' : 'waiting',
         winner,
         skipNextTurn: newSkipList,
-        currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentPlayerIndex: nextPlayerIndex,
         currentQuestion: winner ? state.currentQuestion : question,
-        questionsQueue: winner ? state.questionsQueue : queue
+        questionsQueue: winner ? state.questionsQueue : queue,
+        kidsQuestionsQueue: winner ? state.kidsQuestionsQueue : kidsQueue
       }
     }
 
@@ -193,7 +238,9 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       // After swap UI is dismissed, check for winner and move to next player
       const winner = state.players.find(p => p.position >= state.board.length - 1) || null
       const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
-      const { question, queue } = getNextQuestion(state)
+      const nextPlayerIndex = winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
+      const nextPlayer = state.players[nextPlayerIndex]
+      const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
 
       return {
         ...state,
@@ -201,9 +248,10 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         winner,
         swapInfo: null,
         skipNextTurn: newSkipList,
-        currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentPlayerIndex: nextPlayerIndex,
         currentQuestion: winner ? state.currentQuestion : question,
-        questionsQueue: winner ? state.questionsQueue : queue
+        questionsQueue: winner ? state.questionsQueue : queue,
+        kidsQuestionsQueue: winner ? state.kidsQuestionsQueue : kidsQueue
       }
     }
 
@@ -214,7 +262,21 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
 function createInitialState(players: Player[], boardLength: number): GameState {
   const shuffledQuestions = shuffle([...allQuestions])
-  const [firstQuestion, ...restQuestions] = shuffledQuestions
+  const shuffledKidsQuestions = shuffle([...kidsQuestions])
+
+  // First player determines which queue to use for first question
+  const firstPlayer = players[0]
+  let firstQuestion: Question
+  let restQuestions: Question[]
+  let restKidsQuestions: Question[]
+
+  if (firstPlayer.isChild && shuffledKidsQuestions.length > 0) {
+    [firstQuestion, ...restKidsQuestions] = shuffledKidsQuestions
+    restQuestions = shuffledQuestions
+  } else {
+    [firstQuestion, ...restQuestions] = shuffledQuestions
+    restKidsQuestions = shuffledKidsQuestions
+  }
 
   return {
     players: players.map(p => ({ ...p, position: 0 })),
@@ -227,6 +289,7 @@ function createInitialState(players: Player[], boardLength: number): GameState {
     skipNextTurn: [],
     doubleQuestion: false,
     questionsQueue: restQuestions,
+    kidsQuestionsQueue: restKidsQuestions,
     winner: null,
     swapInfo: null
   }

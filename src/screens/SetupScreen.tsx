@@ -12,6 +12,7 @@ interface Props {
 export default function SetupScreen({ onNavigate, onStartGame }: Props) {
   const [players, setPlayers] = useState<Player[]>([])
   const [newName, setNewName] = useState('')
+  const [isChild, setIsChild] = useState(false)
   const [boardLength, setBoardLength] = useState<10 | 15 | 20>(15)
 
   const addPlayer = () => {
@@ -21,9 +22,11 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
     setPlayers([...players, {
       name,
       color: PLAYER_COLORS[players.length % PLAYER_COLORS.length],
-      position: 0
+      position: 0,
+      isChild
     }])
     setNewName('')
+    setIsChild(false)
   }
 
   const removePlayer = (name: string) => {
@@ -53,7 +56,7 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
         <h3>Гравці ({players.length})</h3>
         <div className="players-list">
           {players.map(player => (
-            <div key={player.name} className="player-item">
+            <div key={player.name} className={`player-item ${player.isChild ? 'player-child' : ''}`}>
               <span className="player-color" style={{ backgroundColor: player.color }} />
               <span className="player-name">{player.name}</span>
               <button className="btn-remove" onClick={() => removePlayer(player.name)}>
@@ -71,6 +74,14 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
             placeholder="Ім'я гравця"
             maxLength={20}
           />
+          <label className="child-checkbox">
+            <input
+              type="checkbox"
+              checked={isChild}
+              onChange={e => setIsChild(e.target.checked)}
+            />
+            Дитина
+          </label>
           <button onClick={addPlayer} disabled={!newName.trim()}>
             + Додати
           </button>

@@ -74,10 +74,12 @@
 .add-player {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-.add-player input {
+.add-player input[type="text"] {
   flex: 1;
+  min-width: 120px;
   padding: 10px 14px;
   font-size: 16px;
   border: none;
@@ -85,8 +87,32 @@
   outline: none;
 }
 
+.child-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.child-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #f093fb;
+}
+
 .add-player button {
   padding: 10px 16px;
+}
+
+.player-child {
+  background: linear-gradient(135deg, rgba(240,147,251,0.3), rgba(245,208,128,0.3));
+  border: 1px solid rgba(240,147,251,0.5);
 }
 
 .board-length-section {
