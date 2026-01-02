@@ -1,0 +1,56 @@
+.game-board {
+  width: 100%;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.board-track {
+  display: flex;
+  gap: 4px;
+  min-width: fit-content;
+  padding: 10px 0;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cell.special {
+  border: 2px solid white;
+}
+
+.cell-icon {
+  font-size: 16px;
+}
+
+.cell-players {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-token {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
