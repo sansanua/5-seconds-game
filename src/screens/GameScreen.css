@@ -117,7 +117,7 @@
 .waiting-buttons {
   display: flex;
   gap: 16px;
-  align-items: center;
+  align-items: flex-end;
 }
 
 .btn-skip {
