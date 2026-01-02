@@ -10,6 +10,7 @@ type GameAction =
   | { type: 'ANSWER_CORRECT' }
   | { type: 'ANSWER_WRONG' }
   | { type: 'NEXT_QUESTION' }
+  | { type: 'SKIP_QUESTION' }
 
 function getNextPlayerIndex(state: GameState): number {
   let next = (state.currentPlayerIndex + 1) % state.players.length
@@ -143,6 +144,17 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'SKIP_QUESTION': {
+      // Skip question without penalty - just get next question for same player
+      const { question, queue } = getNextQuestion(state)
+      return {
+        ...state,
+        currentQuestion: question,
+        questionsQueue: queue,
+        phase: 'waiting'
+      }
+    }
+
     default:
       return state
   }
@@ -178,12 +190,14 @@ export function useGameState(players: Player[], boardLength: number) {
   const timerEnd = useCallback(() => dispatch({ type: 'TIMER_END' }), [])
   const answerCorrect = useCallback(() => dispatch({ type: 'ANSWER_CORRECT' }), [])
   const answerWrong = useCallback(() => dispatch({ type: 'ANSWER_WRONG' }), [])
+  const skipQuestion = useCallback(() => dispatch({ type: 'SKIP_QUESTION' }), [])
 
   return {
     state,
     startTimer,
     timerEnd,
     answerCorrect,
-    answerWrong
+    answerWrong,
+    skipQuestion
   }
 }

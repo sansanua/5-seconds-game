@@ -46,14 +46,11 @@ export default function GameBoard({ board, players }: Props) {
               <span className="cell-icon">🏁</span>
             )}
             <div className="cell-players">
-              {getPlayersOnCell(index).map((player, i) => (
+              {getPlayersOnCell(index).map((player) => (
                 <div
                   key={player.name}
                   className="player-token"
-                  style={{
-                    backgroundColor: player.color,
-                    transform: `translateY(${i * -8}px)`
-                  }}
+                  style={{ backgroundColor: player.color }}
                   title={player.name}
                 >
                   {player.name[0].toUpperCase()}

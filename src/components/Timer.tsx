@@ -59,8 +59,10 @@ export default function Timer({ duration, isRunning, onComplete }: Props) {
     return '#2ecc71' // green
   }
 
+  const shouldPulse = isRunning && timeLeft <= 2 && timeLeft > 0
+
   return (
-    <div className={`timer ${timeLeft <= 2 ? 'pulse' : ''}`}>
+    <div className={`timer ${shouldPulse ? 'pulse' : ''}`}>
       <svg viewBox="0 0 100 100">
         <circle
           className="timer-bg"

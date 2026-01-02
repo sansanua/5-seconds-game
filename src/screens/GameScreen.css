@@ -72,6 +72,33 @@
   padding: 20px 0;
 }
 
+.timer-container {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buttons-container {
+  height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.waiting-buttons {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.btn-skip {
+  font-size: 1rem;
+  padding: 12px 20px;
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
 .btn-start-timer {
   font-size: 1.5rem;
   padding: 16px 48px;

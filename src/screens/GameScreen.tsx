@@ -23,7 +23,7 @@ const SPECIAL_MESSAGES: Record<string, string> = {
 }
 
 export default function GameScreen({ players, boardLength, onNavigate, onGameEnd }: Props) {
-  const { state, startTimer, timerEnd, answerCorrect, answerWrong } = useGameState(players, boardLength)
+  const { state, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion } = useGameState(players, boardLength)
 
   const currentPlayer = state.players[state.currentPlayerIndex]
   const currentCell = state.board[currentPlayer.position]
@@ -72,28 +72,37 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
       </div>
 
       <div className="controls-section">
-        <Timer
-          duration={state.timerDuration}
-          isRunning={state.phase === 'timer'}
-          onComplete={handleTimerComplete}
-        />
+        <div className="timer-container">
+          <Timer
+            duration={state.timerDuration}
+            isRunning={state.phase === 'timer'}
+            onComplete={handleTimerComplete}
+          />
+        </div>
 
-        {state.phase === 'waiting' && (
-          <button className="btn-start-timer" onClick={startTimer}>
-            Поїхали! 🚀
-          </button>
-        )}
+        <div className="buttons-container">
+          {state.phase === 'waiting' && (
+            <div className="waiting-buttons">
+              <button className="btn-skip" onClick={skipQuestion}>
+                Пропустити ⏭️
+              </button>
+              <button className="btn-start-timer" onClick={startTimer}>
+                Поїхали! 🚀
+              </button>
+            </div>
+          )}
 
-        {state.phase === 'judging' && (
-          <div className="judging-buttons">
-            <button className="btn-correct" onClick={answerCorrect}>
-              ✅
-            </button>
-            <button className="btn-wrong" onClick={answerWrong}>
-              ❌
-            </button>
-          </div>
-        )}
+          {state.phase === 'judging' && (
+            <div className="judging-buttons">
+              <button className="btn-wrong" onClick={answerWrong}>
+                ❌
+              </button>
+              <button className="btn-correct" onClick={answerCorrect}>
+                ✅
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
