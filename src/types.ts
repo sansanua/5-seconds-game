@@ -5,6 +5,12 @@ export interface Player {
   isChild: boolean
 }
 
+export interface PlayerStats {
+  correct: number
+  wrong: number
+  skipped: number
+}
+
 export interface Cell {
   type: 'normal' | 'special'
   specialType?: 'back' | 'skip' | 'swap' | 'fast' | 'double' | 'bonus'
@@ -39,6 +45,7 @@ export interface GameState {
   kidsQuestionsQueue: Question[]
   winner: Player | null
   swapInfo: SwapInfo | null
+  playerStats: Record<string, PlayerStats>
 }
 
 export type Screen = 'start' | 'setup' | 'game' | 'victory'

@@ -1,6 +1,6 @@
 // src/screens/GameScreen.tsx
 import { useCallback, useEffect } from 'react'
-import type { Screen, Player, Cell } from '../types'
+import type { Screen, Player, Cell, PlayerStats } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'
@@ -10,7 +10,7 @@ interface Props {
   players: Player[]
   boardLength: number
   onNavigate: (screen: Screen) => void
-  onGameEnd: (winner: Player, board: Cell[]) => void
+  onGameEnd: (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => void
 }
 
 const SPECIAL_MESSAGES: Record<string, string> = {
@@ -34,10 +34,10 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
   // Handle winner
   useEffect(() => {
     if (state.winner) {
-      onGameEnd(state.winner, state.board)
+      onGameEnd(state.winner, state.board, state.playerStats)
       onNavigate('victory')
     }
-  }, [state.winner, state.board, onGameEnd, onNavigate])
+  }, [state.winner, state.board, state.playerStats, onGameEnd, onNavigate])
 
   const handleTimerComplete = useCallback(() => {
     timerEnd()

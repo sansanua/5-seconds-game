@@ -1,6 +1,6 @@
 // src/hooks/useGameState.ts
 import { useReducer, useCallback } from 'react'
-import type { GameState, Player, Question, SwapInfo } from '../types'
+import type { GameState, Player, Question, SwapInfo, PlayerStats } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
 
@@ -24,6 +24,21 @@ function getNextPlayerIndex(state: GameState): number {
     next = (next + 1) % state.players.length
   }
   return next
+}
+
+function updatePlayerStats(
+  stats: Record<string, PlayerStats>,
+  playerName: string,
+  field: keyof PlayerStats
+): Record<string, PlayerStats> {
+  const playerStats = stats[playerName] || { correct: 0, wrong: 0, skipped: 0 }
+  return {
+    ...stats,
+    [playerName]: {
+      ...playerStats,
+      [field]: playerStats[field] + 1
+    }
+  }
 }
 
 function getNextQuestion(state: GameState, forPlayer?: Player): {
@@ -88,6 +103,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'ANSWER_CORRECT': {
       const currentPlayer = state.players[state.currentPlayerIndex]
       const currentCell = state.board[currentPlayer.position]
+      const newStats = updatePlayerStats(state.playerStats, currentPlayer.name, 'correct')
 
       let moveAmount = 1
 
@@ -105,7 +121,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             return {
               ...state,
               phase: 'swap_choosing',
-              doubleQuestion: false
+              doubleQuestion: false,
+              playerStats: newStats
             }
           }
         }
@@ -138,11 +155,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         currentQuestion: winner ? state.currentQuestion : question,
         questionsQueue: winner ? state.questionsQueue : queue,
         kidsQuestionsQueue: winner ? state.kidsQuestionsQueue : kidsQueue,
-        doubleQuestion: false
+        doubleQuestion: false,
+        playerStats: newStats
       }
     }
 
     case 'ANSWER_WRONG': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const newStats = updatePlayerStats(state.playerStats, currentPlayer.name, 'wrong')
       const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
       const nextPlayerIndex = getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
       const nextPlayer = state.players[nextPlayerIndex]
@@ -156,7 +176,8 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         questionsQueue: queue,
         kidsQuestionsQueue: kidsQueue,
         skipNextTurn: newSkipList,
-        doubleQuestion: false
+        doubleQuestion: false,
+        playerStats: newStats
       }
     }
 
@@ -172,13 +193,16 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'SKIP_QUESTION': {
       // Skip question without penalty - just get next question for same player
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const newStats = updatePlayerStats(state.playerStats, currentPlayer.name, 'skipped')
       const { question, queue, kidsQueue } = getNextQuestion(state)
       return {
         ...state,
         currentQuestion: question,
         questionsQueue: queue,
         kidsQuestionsQueue: kidsQueue,
-        phase: 'waiting'
+        phase: 'waiting',
+        playerStats: newStats
       }
     }
 
@@ -278,6 +302,11 @@ function createInitialState(players: Player[], boardLength: number): GameState {
     restKidsQuestions = shuffledKidsQuestions
   }
 
+  const initialStats: Record<string, PlayerStats> = {}
+  players.forEach(p => {
+    initialStats[p.name] = { correct: 0, wrong: 0, skipped: 0 }
+  })
+
   return {
     players: players.map(p => ({ ...p, position: 0 })),
     currentPlayerIndex: 0,
@@ -291,7 +320,8 @@ function createInitialState(players: Player[], boardLength: number): GameState {
     questionsQueue: restQuestions,
     kidsQuestionsQueue: restKidsQuestions,
     winner: null,
-    swapInfo: null
+    swapInfo: null,
+    playerStats: initialStats
   }
 }
 

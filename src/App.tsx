@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Screen, Player, Cell } from './types'
+import type { Screen, Player, Cell, PlayerStats } from './types'
 import './App.css'
 import StartScreen from './screens/StartScreen'
 import SetupScreen from './screens/SetupScreen'
@@ -11,6 +11,7 @@ interface GameData {
   boardLength: number
   winner: Player | null
   board: Cell[]
+  playerStats: Record<string, PlayerStats>
 }
 
 function App() {
@@ -19,29 +20,30 @@ function App() {
     players: [],
     boardLength: 15,
     winner: null,
-    board: []
+    board: [],
+    playerStats: {}
   })
 
   const navigate = (newScreen: Screen) => setScreen(newScreen)
 
   const handleStartGame = (players: Player[], boardLength: number) => {
-    setGameData({ players, boardLength, winner: null, board: [] })
+    setGameData({ players, boardLength, winner: null, board: [], playerStats: {} })
   }
 
-  const handleGameEnd = (winner: Player, board: Cell[]) => {
-    setGameData(prev => ({ ...prev, winner, board }))
+  const handleGameEnd = (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => {
+    setGameData(prev => ({ ...prev, winner, board, playerStats }))
   }
 
   const handlePlayAgain = () => {
     // Reset player positions and start new game with same players
     const resetPlayers = gameData.players.map(p => ({ ...p, position: 0 }))
-    setGameData(prev => ({ ...prev, players: resetPlayers, winner: null, board: [] }))
+    setGameData(prev => ({ ...prev, players: resetPlayers, winner: null, board: [], playerStats: {} }))
     setScreen('game')
   }
 
   const handleNewGame = () => {
     // Go back to setup with cleared players
-    setGameData({ players: [], boardLength: gameData.boardLength, winner: null, board: [] })
+    setGameData({ players: [], boardLength: gameData.boardLength, winner: null, board: [], playerStats: {} })
     setScreen('setup')
   }
 
@@ -65,6 +67,7 @@ function App() {
           winner={gameData.winner}
           players={gameData.players}
           board={gameData.board}
+          playerStats={gameData.playerStats}
           onNavigate={navigate}
           onPlayAgain={handlePlayAgain}
           onNewGame={handleNewGame}
