@@ -31,6 +31,15 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
     ? SPECIAL_MESSAGES[currentCell.specialType]
     : null
 
+  // Determine timer duration display
+  const isFastCell = currentCell.type === 'special' && currentCell.specialType === 'fast'
+  const timerDurationDisplay = currentPlayer.isChild
+    ? '10 сек'
+    : isFastCell
+      ? '3 сек'
+      : '5 сек'
+  const timerEmoji = currentPlayer.isChild ? ' \u{1F476}' : isFastCell ? ' \u26A1' : ''
+
   // Handle winner
   useEffect(() => {
     if (state.winner) {
@@ -86,9 +95,12 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
               <button className="btn-skip" onClick={skipQuestion}>
                 Пропустити ⏭️
               </button>
-              <button className="btn-start-timer" onClick={startTimer}>
-                Поїхали! 🚀
-              </button>
+              <div className="start-timer-group">
+                <span className="timer-duration-hint">{timerDurationDisplay}{timerEmoji}</span>
+                <button className="btn-start-timer" onClick={startTimer}>
+                  Поїхали! 🚀
+                </button>
+              </div>
             </div>
           )}
 
