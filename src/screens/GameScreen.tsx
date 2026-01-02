@@ -1,0 +1,100 @@
+// src/screens/GameScreen.tsx
+import { useCallback, useEffect } from 'react'
+import { Screen, Player } from '../types'
+import { useGameState } from '../hooks/useGameState'
+import GameBoard from '../components/GameBoard'
+import Timer from '../components/Timer'
+import './GameScreen.css'
+
+interface Props {
+  players: Player[]
+  boardLength: number
+  onNavigate: (screen: Screen) => void
+  onGameEnd: (winner: Player) => void
+}
+
+const SPECIAL_MESSAGES: Record<string, string> = {
+  back: '⏪ Назад на 1!',
+  skip: '⏭️ Пропуск наступного ходу!',
+  swap: '🔄 Поміняйся місцями!',
+  fast: '⏱️ Тільки 3 секунди!',
+  double: '❓ Подвійне питання!',
+  bonus: '🎁 Бонус +1!'
+}
+
+export default function GameScreen({ players, boardLength, onNavigate, onGameEnd }: Props) {
+  const { state, startTimer, timerEnd, answerCorrect, answerWrong } = useGameState(players, boardLength)
+
+  const currentPlayer = state.players[state.currentPlayerIndex]
+  const currentCell = state.board[currentPlayer.position]
+  const specialMessage = currentCell.type === 'special' && currentCell.specialType
+    ? SPECIAL_MESSAGES[currentCell.specialType]
+    : null
+
+  // Handle winner
+  useEffect(() => {
+    if (state.winner) {
+      onGameEnd(state.winner)
+      onNavigate('victory')
+    }
+  }, [state.winner, onGameEnd, onNavigate])
+
+  const handleTimerComplete = useCallback(() => {
+    timerEnd()
+  }, [timerEnd])
+
+  return (
+    <div className="game-screen">
+      <div className="game-board-section">
+        <GameBoard board={state.board} players={state.players} />
+      </div>
+
+      <div className="question-section">
+        <div className="current-player">
+          <span
+            className="player-indicator"
+            style={{ backgroundColor: currentPlayer.color }}
+          />
+          {currentPlayer.name}
+        </div>
+
+        {specialMessage && (
+          <div className="special-message">{specialMessage}</div>
+        )}
+
+        <div className="question-card">
+          {state.currentQuestion?.text}
+        </div>
+
+        {state.doubleQuestion && (
+          <div className="double-indicator">Питання 1 з 2</div>
+        )}
+      </div>
+
+      <div className="controls-section">
+        <Timer
+          duration={state.timerDuration}
+          isRunning={state.phase === 'timer'}
+          onComplete={handleTimerComplete}
+        />
+
+        {state.phase === 'waiting' && (
+          <button className="btn-start-timer" onClick={startTimer}>
+            Поїхали! 🚀
+          </button>
+        )}
+
+        {state.phase === 'judging' && (
+          <div className="judging-buttons">
+            <button className="btn-correct" onClick={answerCorrect}>
+              ✅
+            </button>
+            <button className="btn-wrong" onClick={answerWrong}>
+              ❌
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
