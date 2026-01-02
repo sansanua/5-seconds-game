@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { Screen, Player } from './types'
+import { Screen, Player, Cell } from './types'
 import './App.css'
 import StartScreen from './screens/StartScreen'
 import SetupScreen from './screens/SetupScreen'
 import GameScreen from './screens/GameScreen'
+import VictoryScreen from './screens/VictoryScreen'
 
 interface GameData {
   players: Player[]
   boardLength: number
   winner: Player | null
+  board: Cell[]
 }
 
 function App() {
@@ -16,17 +18,31 @@ function App() {
   const [gameData, setGameData] = useState<GameData>({
     players: [],
     boardLength: 15,
-    winner: null
+    winner: null,
+    board: []
   })
 
   const navigate = (newScreen: Screen) => setScreen(newScreen)
 
   const handleStartGame = (players: Player[], boardLength: number) => {
-    setGameData({ players, boardLength, winner: null })
+    setGameData({ players, boardLength, winner: null, board: [] })
   }
 
-  const handleGameEnd = (winner: Player) => {
-    setGameData(prev => ({ ...prev, winner }))
+  const handleGameEnd = (winner: Player, board: Cell[]) => {
+    setGameData(prev => ({ ...prev, winner, board }))
+  }
+
+  const handlePlayAgain = () => {
+    // Reset player positions and start new game with same players
+    const resetPlayers = gameData.players.map(p => ({ ...p, position: 0 }))
+    setGameData(prev => ({ ...prev, players: resetPlayers, winner: null, board: [] }))
+    setScreen('game')
+  }
+
+  const handleNewGame = () => {
+    // Go back to setup with cleared players
+    setGameData({ players: [], boardLength: gameData.boardLength, winner: null, board: [] })
+    setScreen('setup')
   }
 
   switch (screen) {
@@ -45,11 +61,14 @@ function App() {
       )
     case 'victory':
       return (
-        <div style={{ textAlign: 'center', paddingTop: '100px' }}>
-          <h1>🏆 Переможець!</h1>
-          <h2>{gameData.winner?.name}</h2>
-          <button onClick={() => navigate('start')}>На головну</button>
-        </div>
+        <VictoryScreen
+          winner={gameData.winner}
+          players={gameData.players}
+          board={gameData.board}
+          onNavigate={navigate}
+          onPlayAgain={handlePlayAgain}
+          onNewGame={handleNewGame}
+        />
       )
   }
 }
