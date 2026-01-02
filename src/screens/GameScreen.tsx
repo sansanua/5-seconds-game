@@ -1,6 +1,6 @@
 // src/screens/GameScreen.tsx
 import { useCallback, useEffect } from 'react'
-import { Screen, Player, Cell } from '../types'
+import type { Screen, Player, Cell } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'

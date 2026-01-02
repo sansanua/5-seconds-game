@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Screen, Player, Cell } from './types'
+import type { Screen, Player, Cell } from './types'
 import './App.css'
 import StartScreen from './screens/StartScreen'
 import SetupScreen from './screens/SetupScreen'

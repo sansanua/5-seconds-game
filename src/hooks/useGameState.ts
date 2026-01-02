@@ -1,6 +1,6 @@
 // src/hooks/useGameState.ts
 import { useReducer, useCallback } from 'react'
-import { GameState, Player, Cell, Question, GamePhase } from '../types'
+import type { GameState, Player, Question } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
 

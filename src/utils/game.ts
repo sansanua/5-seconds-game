@@ -1,4 +1,4 @@
-import { Cell } from '../types'
+import type { Cell } from '../types'
 
 const SPECIAL_TYPES = ['back', 'skip', 'swap', 'fast', 'double', 'bonus'] as const
 

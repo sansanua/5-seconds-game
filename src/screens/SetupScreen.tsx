@@ -1,6 +1,6 @@
 // src/screens/SetupScreen.tsx
 import { useState } from 'react'
-import { Screen, Player } from '../types'
+import type { Screen, Player } from '../types'
 import { PLAYER_COLORS } from '../utils/game'
 import './SetupScreen.css'
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Screen } from '../types'
+import type { Screen } from '../types'
 import './StartScreen.css'
 
 interface Props {

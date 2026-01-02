@@ -1,7 +1,7 @@
 // src/screens/VictoryScreen.tsx
 import { useEffect } from 'react'
 import confetti from 'canvas-confetti'
-import { Screen, Player, Cell } from '../types'
+import type { Screen, Player, Cell } from '../types'
 import GameBoard from '../components/GameBoard'
 import './VictoryScreen.css'
 

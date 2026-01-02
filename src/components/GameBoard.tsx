@@ -1,4 +1,4 @@
-import { Cell, Player } from '../types'
+import type { Cell, Player } from '../types'
 import './GameBoard.css'
 
 interface Props {

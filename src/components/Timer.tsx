@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useRef, useState } from 'react'
 import './Timer.css'
 
 interface Props {
@@ -8,32 +9,45 @@ interface Props {
 }
 
 export default function Timer({ duration, isRunning, onComplete }: Props) {
-  const [timeLeft, setTimeLeft] = useState(duration)
+  const [timeLeft, setTimeLeft] = useState<number>(duration)
+  const onCompleteRef = useRef(onComplete)
+  const wasRunningRef = useRef(isRunning)
+  const hasCompletedRef = useRef(false)
 
+  // Update the callback ref in an effect
   useEffect(() => {
-    setTimeLeft(duration)
-  }, [duration, isRunning])
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
+  // Handle timer start/reset and countdown
   useEffect(() => {
-    if (!isRunning) return
-
-    if (timeLeft <= 0) {
-      onComplete()
-      return
+    // Detect transition from not running to running
+    if (isRunning && !wasRunningRef.current) {
+      setTimeLeft(duration)
+      hasCompletedRef.current = false
     }
+    wasRunningRef.current = isRunning
+
+    if (!isRunning) return
 
     const interval = setInterval(() => {
       setTimeLeft(prev => {
-        if (prev <= 1) {
+        const next = prev - 1
+        if (next <= 0) {
           clearInterval(interval)
+          if (!hasCompletedRef.current) {
+            hasCompletedRef.current = true
+            // Use setTimeout to avoid calling during render
+            setTimeout(() => onCompleteRef.current(), 0)
+          }
           return 0
         }
-        return prev - 1
+        return next
       })
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isRunning, timeLeft, onComplete])
+  }, [isRunning, duration])
 
   const progress = timeLeft / duration
   const circumference = 2 * Math.PI * 45
