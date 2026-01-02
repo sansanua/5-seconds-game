@@ -29,10 +29,15 @@
   padding: 16px 48px;
 }
 
-.btn-sound {
+.settings-buttons {
   position: absolute;
   top: 20px;
   right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-setting {
   width: 50px;
   height: 50px;
   font-size: 24px;
@@ -42,6 +47,6 @@
   color: white;
 }
 
-.btn-sound:hover {
+.btn-setting:hover {
   background: rgba(255,255,255,0.3);
 }

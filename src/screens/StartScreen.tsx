@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Screen } from '../types'
+import { useFullscreen } from '../hooks/useFullscreen'
 import './StartScreen.css'
 
 interface Props {
@@ -10,6 +11,7 @@ export default function StartScreen({ onNavigate }: Props) {
   const [soundEnabled, setSoundEnabled] = useState(() =>
     localStorage.getItem('soundEnabled') !== 'false'
   )
+  const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
 
   const toggleSound = () => {
     const newValue = !soundEnabled
@@ -26,9 +28,16 @@ export default function StartScreen({ onNavigate }: Props) {
           Нова гра
         </button>
       </div>
-      <button className="btn-sound" onClick={toggleSound}>
-        {soundEnabled ? '🔊' : '🔇'}
-      </button>
+      <div className="settings-buttons">
+        {isSupported && (
+          <button className="btn-setting" onClick={toggleFullscreen}>
+            {isFullscreen ? '⛶' : '⛶'}
+          </button>
+        )}
+        <button className="btn-setting" onClick={toggleSound}>
+          {soundEnabled ? '🔊' : '🔇'}
+        </button>
+      </div>
     </div>
   )
 }

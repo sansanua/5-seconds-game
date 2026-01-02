@@ -2,6 +2,7 @@
 import { useCallback, useEffect } from 'react'
 import type { Screen, Player, Cell, PlayerStats } from '../types'
 import { useGameState } from '../hooks/useGameState'
+import { useFullscreen } from '../hooks/useFullscreen'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'
 import './GameScreen.css'
@@ -24,6 +25,7 @@ const SPECIAL_MESSAGES: Record<string, string> = {
 
 export default function GameScreen({ players, boardLength, onNavigate, onGameEnd }: Props) {
   const { state, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap } = useGameState(players, boardLength)
+  const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
 
   const currentPlayer = state.players[state.currentPlayerIndex]
   const currentCell = state.board[currentPlayer.position]
@@ -199,6 +201,12 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
             </button>
           </div>
         </div>
+      )}
+
+      {isSupported && (
+        <button className="btn-fullscreen-corner" onClick={toggleFullscreen}>
+          {isFullscreen ? '⛶' : '⛶'}
+        </button>
       )}
     </div>
   )
