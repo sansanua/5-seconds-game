@@ -80,7 +80,11 @@ export default function VictoryScreen({
             return (
               <div key={player.name} className="stats-card">
                 <div className="stats-card-header">
-                  <span className="stats-player-color" style={{ backgroundColor: player.color }} />
+                  {player.emoji ? (
+                    <span className="stats-player-emoji">{player.emoji}</span>
+                  ) : (
+                    <span className="stats-player-color" style={{ backgroundColor: player.color }} />
+                  )}
                   <span className="stats-player-name">{player.name}</span>
                 </div>
                 <div className="stats-card-body">

@@ -141,6 +141,12 @@
   flex-shrink: 0;
 }
 
+.stats-player-emoji {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .stats-player-name {
   font-weight: bold;
   font-size: 14px;

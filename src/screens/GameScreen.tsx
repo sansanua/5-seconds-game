@@ -1,17 +1,23 @@
 // src/screens/GameScreen.tsx
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
+import EmojiPicker, { Theme } from 'emoji-picker-react'
+import type { EmojiClickData } from 'emoji-picker-react'
 import type { Screen, Player, Cell, PlayerStats } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import { useFullscreen } from '../hooks/useFullscreen'
+import { getPlayerInitials } from '../utils/playerDisplay'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'
 import './GameScreen.css'
+
+const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
 
 interface Props {
   players: Player[]
   boardLength: number
   onNavigate: (screen: Screen) => void
   onGameEnd: (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => void
+  onUpdatePlayers: (players: Player[]) => void
 }
 
 const SPECIAL_MESSAGES: Record<string, string> = {
@@ -23,9 +29,129 @@ const SPECIAL_MESSAGES: Record<string, string> = {
   bonus: '🎁 Бонус +1!'
 }
 
-export default function GameScreen({ players, boardLength, onNavigate, onGameEnd }: Props) {
-  const { state, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap } = useGameState(players, boardLength)
+export default function GameScreen({ players, boardLength, onNavigate, onGameEnd, onUpdatePlayers }: Props) {
+  const { state, startCountdown, countdownEnd, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap, updatePlayers } = useGameState(players, boardLength)
   const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
+
+  // Settings modal state
+  const [showSettings, setShowSettings] = useState(false)
+  const [editingPlayers, setEditingPlayers] = useState<Player[]>([])
+  const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+
+  // Show question immediately setting
+  const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
+    return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
+  })
+
+  // Countdown state
+  const [countdownValue, setCountdownValue] = useState<number | null>(null)
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
+        setEditingPlayerIndex(null)
+      }
+    }
+
+    if (editingPlayerIndex !== null) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [editingPlayerIndex])
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (state.phase === 'countdown') {
+      setCountdownValue(3)
+    } else {
+      setCountdownValue(null)
+    }
+  }, [state.phase])
+
+  useEffect(() => {
+    if (countdownValue === null) return
+
+    if (countdownValue > 0) {
+      const timer = setTimeout(() => {
+        setCountdownValue(countdownValue - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    } else {
+      // Countdown finished, start the timer
+      countdownEnd()
+    }
+  }, [countdownValue, countdownEnd])
+
+  // Handler for "Поїхали" button
+  const handleStartButton = useCallback(() => {
+    const currentPlayer = state.players[state.currentPlayerIndex]
+    // If showQuestionImmediately is ON or current player is a child, skip countdown
+    if (showQuestionImmediately || currentPlayer.isChild) {
+      startTimer()
+    } else {
+      startCountdown()
+    }
+  }, [showQuestionImmediately, state.players, state.currentPlayerIndex, startTimer, startCountdown])
+
+  // Handler for settings toggle
+  const handleShowQuestionImmediatelyChange = (checked: boolean) => {
+    setShowQuestionImmediately(checked)
+    localStorage.setItem(SHOW_QUESTION_IMMEDIATELY_KEY, String(checked))
+  }
+
+  const openSettings = () => {
+    setEditingPlayers(state.players.map(p => ({ ...p })))
+    setShowSettings(true)
+  }
+
+  const closeSettings = () => {
+    setShowSettings(false)
+    setEditingPlayerIndex(null)
+  }
+
+  const saveSettings = () => {
+    // Update game state players and notify parent
+    updatePlayers(editingPlayers)
+    onUpdatePlayers(editingPlayers)
+    setShowSettings(false)
+    setEditingPlayerIndex(null)
+  }
+
+  const handlePlayerNameChange = (index: number, name: string) => {
+    setEditingPlayers(editingPlayers.map((p, i) =>
+      i === index ? { ...p, name } : p
+    ))
+  }
+
+  const handleIsChildToggle = (index: number) => {
+    setEditingPlayers(editingPlayers.map((p, i) =>
+      i === index ? { ...p, isChild: !p.isChild } : p
+    ))
+  }
+
+  const handleEmojiClick = (emojiData: EmojiClickData, playerIndex: number) => {
+    setEditingPlayers(editingPlayers.map((p, i) =>
+      i === playerIndex ? { ...p, emoji: emojiData.emoji } : p
+    ))
+    setEditingPlayerIndex(null)
+  }
+
+  const handleRemoveEmoji = (playerIndex: number) => {
+    setEditingPlayers(editingPlayers.map((p, i) =>
+      i === playerIndex ? { ...p, emoji: undefined } : p
+    ))
+    setEditingPlayerIndex(null)
+  }
+
+  const handleAvatarClick = (index: number) => {
+    setEditingPlayerIndex(editingPlayerIndex === index ? null : index)
+  }
+
+  const handleBack = () => {
+    onNavigate('start')
+  }
 
   const currentPlayer = state.players[state.currentPlayerIndex]
   const currentCell = state.board[currentPlayer.position]
@@ -41,6 +167,17 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
       ? '3 сек'
       : '5 сек'
   const timerEmoji = currentPlayer.isChild ? ' \u{1F476}' : isFastCell ? ' \u26A1' : ''
+
+  // Determine if question should be visible
+  // Question is visible if:
+  // 1. showQuestionImmediately setting is ON, OR
+  // 2. Current player is a child (isChild), OR
+  // 3. Phase is 'countdown' (reading time), 'timer' or 'judging'
+  const shouldShowQuestion = showQuestionImmediately ||
+    currentPlayer.isChild ||
+    state.phase === 'countdown' ||
+    state.phase === 'timer' ||
+    state.phase === 'judging'
 
   // Handle winner
   useEffect(() => {
@@ -61,16 +198,28 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
 
   return (
     <div className="game-screen">
+      {/* Navigation buttons */}
+      <button className="btn-back-game" onClick={handleBack} title="Повернутися на головну">
+        &#x2190;
+      </button>
+      <button className="btn-settings-game" onClick={openSettings} title="Налаштування гравців">
+        &#x2699;
+      </button>
+
       <div className="game-board-section">
         <GameBoard board={state.board} players={state.players} />
       </div>
 
       <div className="question-section">
         <div className="current-player">
-          <span
-            className="player-indicator"
-            style={{ backgroundColor: currentPlayer.color }}
-          />
+          {currentPlayer.emoji ? (
+            <span className="player-indicator-emoji">{currentPlayer.emoji}</span>
+          ) : (
+            <span
+              className="player-indicator"
+              style={{ backgroundColor: currentPlayer.color }}
+            />
+          )}
           <div className="player-name-stats">
             <span className="player-name">{currentPlayer.name}</span>
             <span className="player-mini-stats">
@@ -84,8 +233,8 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
           <div className="special-message">{specialMessage}</div>
         )}
 
-        <div className={`question-card ${state.phase === 'judging' ? 'shake' : ''}`}>
-          {state.currentQuestion?.text}
+        <div className={`question-card ${state.phase === 'judging' ? 'shake' : ''} ${!shouldShowQuestion ? 'question-hidden' : ''}`}>
+          {shouldShowQuestion ? state.currentQuestion?.text : '???'}
         </div>
 
         {state.doubleQuestion && (
@@ -95,11 +244,17 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
 
       <div className="controls-section">
         <div className="timer-container">
-          <Timer
-            duration={state.timerDuration}
-            isRunning={state.phase === 'timer'}
-            onComplete={handleTimerComplete}
-          />
+          {state.phase === 'countdown' && countdownValue !== null && countdownValue > 0 ? (
+            <div className="countdown-number" key={countdownValue}>
+              {countdownValue}
+            </div>
+          ) : (
+            <Timer
+              duration={state.timerDuration}
+              isRunning={state.phase === 'timer'}
+              onComplete={handleTimerComplete}
+            />
+          )}
         </div>
 
         <div className="buttons-container">
@@ -110,10 +265,16 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
               </button>
               <div className="start-timer-group">
                 <span className="timer-duration-hint">{timerDurationDisplay}{timerEmoji}</span>
-                <button className="btn-start-timer" onClick={startTimer}>
+                <button className="btn-start-timer" onClick={handleStartButton}>
                   Поїхали! 🚀
                 </button>
               </div>
+            </div>
+          )}
+
+          {state.phase === 'countdown' && (
+            <div className="countdown-hint">
+              Читайте питання...
             </div>
           )}
 
@@ -135,10 +296,14 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
           <div className="swap-modal swap-choosing">
             <div className="swap-modal-title">🔄 Обмін позиціями</div>
             <div className="swap-choosing-subtitle">
-              <span
-                className="swap-player-color"
-                style={{ backgroundColor: currentPlayer.color }}
-              />
+              {currentPlayer.emoji ? (
+                <span className="swap-player-emoji">{currentPlayer.emoji}</span>
+              ) : (
+                <span
+                  className="swap-player-color"
+                  style={{ backgroundColor: currentPlayer.color }}
+                />
+              )}
               <span>{currentPlayer.name}</span>
               <span className="swap-choosing-position">(позиція {currentPlayer.position + 1})</span>
             </div>
@@ -153,10 +318,14 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
                     className="swap-player-btn"
                     onClick={() => selectSwapPlayer(index)}
                   >
-                    <span
-                      className="swap-player-color"
-                      style={{ backgroundColor: player.color }}
-                    />
+                    {player.emoji ? (
+                      <span className="swap-player-emoji">{player.emoji}</span>
+                    ) : (
+                      <span
+                        className="swap-player-color"
+                        style={{ backgroundColor: player.color }}
+                      />
+                    )}
                     <span className="swap-player-btn-name">{player.name}</span>
                     <span className="swap-player-btn-position">позиція {player.position + 1}</span>
                   </button>
@@ -175,10 +344,14 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
             <div className="swap-modal-title">🔄 Обмін позиціями!</div>
             <div className="swap-modal-content">
               <div className="swap-player">
-                <span
-                  className="swap-player-color"
-                  style={{ backgroundColor: state.swapInfo.currentPlayer.color }}
-                />
+                {state.swapInfo.currentPlayer.emoji ? (
+                  <span className="swap-player-emoji">{state.swapInfo.currentPlayer.emoji}</span>
+                ) : (
+                  <span
+                    className="swap-player-color"
+                    style={{ backgroundColor: state.swapInfo.currentPlayer.color }}
+                  />
+                )}
                 <span className="swap-player-name">{state.swapInfo.currentPlayer.name}</span>
                 <span className="swap-position">
                   {state.swapInfo.currentPlayerOldPosition + 1} → {state.swapInfo.otherPlayerOldPosition + 1}
@@ -186,10 +359,14 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
               </div>
               <div className="swap-arrow">⇄</div>
               <div className="swap-player">
-                <span
-                  className="swap-player-color"
-                  style={{ backgroundColor: state.swapInfo.otherPlayer.color }}
-                />
+                {state.swapInfo.otherPlayer.emoji ? (
+                  <span className="swap-player-emoji">{state.swapInfo.otherPlayer.emoji}</span>
+                ) : (
+                  <span
+                    className="swap-player-color"
+                    style={{ backgroundColor: state.swapInfo.otherPlayer.color }}
+                  />
+                )}
                 <span className="swap-player-name">{state.swapInfo.otherPlayer.name}</span>
                 <span className="swap-position">
                   {state.swapInfo.otherPlayerOldPosition + 1} → {state.swapInfo.currentPlayerOldPosition + 1}
@@ -199,6 +376,101 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
             <button className="swap-modal-btn" onClick={dismissSwap}>
               OK
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="settings-modal-overlay">
+          <div className="settings-modal">
+            <div className="settings-modal-header">
+              <h3>Налаштування</h3>
+              <button className="btn-close-settings" onClick={closeSettings}>
+                &#x2715;
+              </button>
+            </div>
+
+            {/* Game settings section */}
+            <div className="settings-game-options">
+              <label className="setting-toggle-game">
+                <input
+                  type="checkbox"
+                  checked={showQuestionImmediately}
+                  onChange={e => handleShowQuestionImmediatelyChange(e.target.checked)}
+                />
+                <span className="setting-label-game">Показувати питання одразу</span>
+              </label>
+            </div>
+
+            <div className="settings-section-title">Гравці</div>
+            <div className="settings-players-list">
+              {editingPlayers.map((player, index) => (
+                <div key={index} className={`settings-player-item ${player.isChild ? 'player-child' : ''}`}>
+                  <button
+                    className="player-avatar-btn"
+                    onClick={() => handleAvatarClick(index)}
+                    title="Натисніть щоб змінити емодзі"
+                  >
+                    {player.emoji ? (
+                      <span className="player-emoji">{player.emoji}</span>
+                    ) : (
+                      <span
+                        className="player-color"
+                        style={{ backgroundColor: player.color }}
+                      >
+                        {getPlayerInitials(player.name)}
+                      </span>
+                    )}
+                  </button>
+                  {editingPlayerIndex === index && (
+                    <div className="emoji-picker-popup settings-emoji-picker" ref={emojiPickerRef}>
+                      <div className="emoji-picker-header">
+                        {player.emoji && (
+                          <button
+                            className="btn-remove-emoji"
+                            onClick={() => handleRemoveEmoji(index)}
+                          >
+                            Видалити емодзі
+                          </button>
+                        )}
+                      </div>
+                      <EmojiPicker
+                        onEmojiClick={(data) => handleEmojiClick(data, index)}
+                        theme={Theme.DARK}
+                        width={340}
+                        height={420}
+                        searchPlaceholder="Пошук..."
+                        previewConfig={{ showPreview: false }}
+                      />
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    className="settings-player-name-input"
+                    value={player.name}
+                    onChange={(e) => handlePlayerNameChange(index, e.target.value)}
+                    maxLength={20}
+                  />
+                  <label className="settings-child-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={player.isChild}
+                      onChange={() => handleIsChildToggle(index)}
+                    />
+                    <span className="child-label">Дитина</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="settings-modal-footer">
+              <button className="btn-cancel-settings" onClick={closeSettings}>
+                Скасувати
+              </button>
+              <button className="btn-save-settings" onClick={saveSettings}>
+                Зберегти
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -7,6 +7,8 @@ import { questions as allQuestions } from '../data/questions'
 const kidsQuestions = allQuestions.filter(q => q.forKids)
 
 type GameAction =
+  | { type: 'START_COUNTDOWN' }
+  | { type: 'COUNTDOWN_END' }
   | { type: 'START_TIMER' }
   | { type: 'TIMER_END' }
   | { type: 'ANSWER_CORRECT' }
@@ -16,6 +18,7 @@ type GameAction =
   | { type: 'SELECT_SWAP_PLAYER'; playerIndex: number }
   | { type: 'DECLINE_SWAP' }
   | { type: 'DISMISS_SWAP' }
+  | { type: 'UPDATE_PLAYERS'; players: Player[] }
 
 function getNextPlayerIndex(state: GameState): number {
   let next = (state.currentPlayerIndex + 1) % state.players.length
@@ -80,6 +83,26 @@ function getNextQuestion(state: GameState, forPlayer?: Player): {
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
+    case 'START_COUNTDOWN':
+      return { ...state, phase: 'countdown' }
+
+    case 'COUNTDOWN_END': {
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const currentCell = state.board[currentPlayer.position]
+      const isFast = currentCell.type === 'special' && currentCell.specialType === 'fast'
+      const isDouble = currentCell.type === 'special' && currentCell.specialType === 'double'
+
+      // Kids always get 10 seconds, adults get 5 or 3 (fast cell)
+      const timerDuration = currentPlayer.isChild ? 10 : (isFast ? 3 : 5)
+
+      return {
+        ...state,
+        phase: 'timer',
+        timerDuration,
+        doubleQuestion: isDouble
+      }
+    }
+
     case 'START_TIMER': {
       const currentPlayer = state.players[state.currentPlayerIndex]
       const currentCell = state.board[currentPlayer.position]
@@ -279,6 +302,34 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'UPDATE_PLAYERS': {
+      // Update player data while preserving positions
+      const updatedPlayers = state.players.map((currentPlayer, index) => {
+        const editedPlayer = action.players[index]
+        if (editedPlayer) {
+          return {
+            ...editedPlayer,
+            position: currentPlayer.position // Keep current position
+          }
+        }
+        return currentPlayer
+      })
+
+      // Update playerStats keys if names changed
+      const newPlayerStats: Record<string, PlayerStats> = {}
+      state.players.forEach((oldPlayer, index) => {
+        const newPlayer = updatedPlayers[index]
+        const oldStats = state.playerStats[oldPlayer.name] || { correct: 0, wrong: 0, skipped: 0 }
+        newPlayerStats[newPlayer.name] = oldStats
+      })
+
+      return {
+        ...state,
+        players: updatedPlayers,
+        playerStats: newPlayerStats
+      }
+    }
+
     default:
       return state
   }
@@ -332,6 +383,8 @@ export function useGameState(players: Player[], boardLength: number) {
     ({ players, boardLength }) => createInitialState(players, boardLength)
   )
 
+  const startCountdown = useCallback(() => dispatch({ type: 'START_COUNTDOWN' }), [])
+  const countdownEnd = useCallback(() => dispatch({ type: 'COUNTDOWN_END' }), [])
   const startTimer = useCallback(() => dispatch({ type: 'START_TIMER' }), [])
   const timerEnd = useCallback(() => dispatch({ type: 'TIMER_END' }), [])
   const answerCorrect = useCallback(() => dispatch({ type: 'ANSWER_CORRECT' }), [])
@@ -340,9 +393,12 @@ export function useGameState(players: Player[], boardLength: number) {
   const selectSwapPlayer = useCallback((playerIndex: number) => dispatch({ type: 'SELECT_SWAP_PLAYER', playerIndex }), [])
   const declineSwap = useCallback(() => dispatch({ type: 'DECLINE_SWAP' }), [])
   const dismissSwap = useCallback(() => dispatch({ type: 'DISMISS_SWAP' }), [])
+  const updatePlayers = useCallback((players: Player[]) => dispatch({ type: 'UPDATE_PLAYERS', players }), [])
 
   return {
     state,
+    startCountdown,
+    countdownEnd,
     startTimer,
     timerEnd,
     answerCorrect,
@@ -350,6 +406,7 @@ export function useGameState(players: Player[], boardLength: number) {
     skipQuestion,
     selectSwapPlayer,
     declineSwap,
-    dismissSwap
+    dismissSwap,
+    updatePlayers
   }
 }

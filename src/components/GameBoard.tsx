@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Cell, Player } from '../types'
+import { getPlayerInitials } from '../utils/playerDisplay'
 import './GameBoard.css'
 
 interface Props {
@@ -132,14 +133,14 @@ export default function GameBoard({ board, players }: Props) {
           return (
             <div
               key={player.name}
-              className="player-token animated"
+              className={`player-token animated ${player.emoji ? 'has-emoji' : ''}`}
               style={{
-                backgroundColor: player.color,
-                transform: `translate(${position.x + offsetX - 10}px, ${position.y + 10}px)`
+                backgroundColor: player.emoji ? 'transparent' : player.color,
+                transform: `translate(${position.x + offsetX - 12}px, ${position.y + 8}px)`
               }}
               title={player.name}
             >
-              {player.name[0].toUpperCase()}
+              {player.emoji || getPlayerInitials(player.name)}
             </div>
           )
         })}

@@ -59,6 +59,7 @@ function App() {
           boardLength={gameData.boardLength}
           onNavigate={navigate}
           onGameEnd={handleGameEnd}
+          onUpdatePlayers={(players) => setGameData(prev => ({ ...prev, players }))}
         />
       )
     case 'victory':

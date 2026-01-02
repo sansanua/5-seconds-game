@@ -3,6 +3,7 @@ export interface Player {
   color: string
   position: number
   isChild: boolean
+  emoji?: string
 }
 
 export interface PlayerStats {
@@ -29,7 +30,7 @@ export interface SwapInfo {
   otherPlayerOldPosition: number
 }
 
-export type GamePhase = 'waiting' | 'timer' | 'judging' | 'effect' | 'swap_choosing' | 'swap_effect'
+export type GamePhase = 'waiting' | 'countdown' | 'timer' | 'judging' | 'effect' | 'swap_choosing' | 'swap_effect'
 
 export interface GameState {
   players: Player[]
