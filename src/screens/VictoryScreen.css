@@ -1,0 +1,98 @@
+/* src/screens/VictoryScreen.css */
+.victory-screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  gap: 24px;
+}
+
+.victory-content {
+  text-align: center;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.trophy {
+  font-size: 5rem;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.victory-title {
+  font-size: 2.5rem;
+  margin: 10px 0;
+}
+
+.winner-name {
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 5px currentColor);
+  }
+  to {
+    filter: drop-shadow(0 0 15px currentColor);
+  }
+}
+
+.final-board {
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.final-board h3 {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.victory-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+  margin-top: auto;
+}
+
+.victory-buttons button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+}
+
+.btn-play-again {
+  background: #2ecc71;
+  color: white;
+}
+
+.btn-new-game {
+  background: #3498db;
+  color: white;
+}
+
+.btn-home {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
