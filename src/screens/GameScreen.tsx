@@ -49,6 +49,11 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
   }, [state.winner, state.board, state.playerStats, onGameEnd, onNavigate])
 
   const handleTimerComplete = useCallback(() => {
+    // Trigger vibration on mobile devices if sound is enabled
+    const soundEnabled = localStorage.getItem('soundEnabled') !== 'false'
+    if (soundEnabled && 'vibrate' in navigator) {
+      navigator.vibrate(200)
+    }
     timerEnd()
   }, [timerEnd])
 
