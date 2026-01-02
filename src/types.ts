@@ -14,7 +14,14 @@ export interface Question {
   text: string
 }
 
-export type GamePhase = 'waiting' | 'timer' | 'judging' | 'effect'
+export interface SwapInfo {
+  currentPlayer: Player
+  otherPlayer: Player
+  currentPlayerOldPosition: number
+  otherPlayerOldPosition: number
+}
+
+export type GamePhase = 'waiting' | 'timer' | 'judging' | 'effect' | 'swap_choosing' | 'swap_effect'
 
 export interface GameState {
   players: Player[]
@@ -28,6 +35,7 @@ export interface GameState {
   doubleQuestion: boolean
   questionsQueue: Question[]
   winner: Player | null
+  swapInfo: SwapInfo | null
 }
 
 export type Screen = 'start' | 'setup' | 'game' | 'victory'

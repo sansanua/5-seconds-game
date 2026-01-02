@@ -23,7 +23,7 @@ const SPECIAL_MESSAGES: Record<string, string> = {
 }
 
 export default function GameScreen({ players, boardLength, onNavigate, onGameEnd }: Props) {
-  const { state, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion } = useGameState(players, boardLength)
+  const { state, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap } = useGameState(players, boardLength)
 
   const currentPlayer = state.players[state.currentPlayerIndex]
   const currentCell = state.board[currentPlayer.position]
@@ -104,6 +104,79 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
           )}
         </div>
       </div>
+
+      {state.phase === 'swap_choosing' && (
+        <div className="swap-modal-overlay">
+          <div className="swap-modal swap-choosing">
+            <div className="swap-modal-title">🔄 Обмін позиціями</div>
+            <div className="swap-choosing-subtitle">
+              <span
+                className="swap-player-color"
+                style={{ backgroundColor: currentPlayer.color }}
+              />
+              <span>{currentPlayer.name}</span>
+              <span className="swap-choosing-position">(позиція {currentPlayer.position + 1})</span>
+            </div>
+            <div className="swap-choosing-label">З ким обмінятися?</div>
+            <div className="swap-choosing-options">
+              {state.players
+                .map((player, index) => ({ player, index }))
+                .filter(({ index }) => index !== state.currentPlayerIndex)
+                .map(({ player, index }) => (
+                  <button
+                    key={index}
+                    className="swap-player-btn"
+                    onClick={() => selectSwapPlayer(index)}
+                  >
+                    <span
+                      className="swap-player-color"
+                      style={{ backgroundColor: player.color }}
+                    />
+                    <span className="swap-player-btn-name">{player.name}</span>
+                    <span className="swap-player-btn-position">позиція {player.position + 1}</span>
+                  </button>
+                ))}
+            </div>
+            <button className="swap-decline-btn" onClick={declineSwap}>
+              Не хочу обмінюватися
+            </button>
+          </div>
+        </div>
+      )}
+
+      {state.phase === 'swap_effect' && state.swapInfo && (
+        <div className="swap-modal-overlay">
+          <div className="swap-modal">
+            <div className="swap-modal-title">🔄 Обмін позиціями!</div>
+            <div className="swap-modal-content">
+              <div className="swap-player">
+                <span
+                  className="swap-player-color"
+                  style={{ backgroundColor: state.swapInfo.currentPlayer.color }}
+                />
+                <span className="swap-player-name">{state.swapInfo.currentPlayer.name}</span>
+                <span className="swap-position">
+                  {state.swapInfo.currentPlayerOldPosition + 1} → {state.swapInfo.otherPlayerOldPosition + 1}
+                </span>
+              </div>
+              <div className="swap-arrow">⇄</div>
+              <div className="swap-player">
+                <span
+                  className="swap-player-color"
+                  style={{ backgroundColor: state.swapInfo.otherPlayer.color }}
+                />
+                <span className="swap-player-name">{state.swapInfo.otherPlayer.name}</span>
+                <span className="swap-position">
+                  {state.swapInfo.otherPlayerOldPosition + 1} → {state.swapInfo.currentPlayerOldPosition + 1}
+                </span>
+              </div>
+            </div>
+            <button className="swap-modal-btn" onClick={dismissSwap}>
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

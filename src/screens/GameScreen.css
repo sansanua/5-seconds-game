@@ -126,3 +126,180 @@
   background: #e74c3c;
   color: white;
 }
+
+/* Swap Modal */
+.swap-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.swap-modal {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 32px;
+  border-radius: 20px;
+  text-align: center;
+  max-width: 90%;
+  min-width: 280px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.swap-modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+.swap-modal-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.swap-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  min-width: 100px;
+}
+
+.swap-player-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid white;
+}
+
+.swap-player-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.swap-position {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.swap-arrow {
+  font-size: 2rem;
+  animation: swapPulse 1s ease-in-out infinite;
+}
+
+@keyframes swapPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.swap-modal-btn {
+  font-size: 1.2rem;
+  padding: 14px 48px;
+  background: white;
+  color: #667eea;
+  font-weight: bold;
+}
+
+/* Swap Choosing Modal */
+.swap-modal.swap-choosing {
+  min-width: 320px;
+}
+
+.swap-choosing-subtitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+}
+
+.swap-choosing-position {
+  opacity: 0.8;
+  font-size: 1rem;
+}
+
+.swap-choosing-label {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 12px;
+}
+
+.swap-choosing-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.swap-player-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: white;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.swap-player-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: white;
+  transform: scale(1.02);
+}
+
+.swap-player-btn-name {
+  flex: 1;
+  text-align: left;
+  font-weight: bold;
+}
+
+.swap-player-btn-position {
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.swap-decline-btn {
+  font-size: 1rem;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.swap-decline-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

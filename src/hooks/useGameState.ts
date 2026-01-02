@@ -1,6 +1,6 @@
 // src/hooks/useGameState.ts
 import { useReducer, useCallback } from 'react'
-import type { GameState, Player, Question } from '../types'
+import type { GameState, Player, Question, SwapInfo } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
 
@@ -11,6 +11,9 @@ type GameAction =
   | { type: 'ANSWER_WRONG' }
   | { type: 'NEXT_QUESTION' }
   | { type: 'SKIP_QUESTION' }
+  | { type: 'SELECT_SWAP_PLAYER'; playerIndex: number }
+  | { type: 'DECLINE_SWAP' }
+  | { type: 'DISMISS_SWAP' }
 
 function getNextPlayerIndex(state: GameState): number {
   let next = (state.currentPlayerIndex + 1) % state.players.length
@@ -64,30 +67,12 @@ function gameReducer(state: GameState, action: GameAction): GameState {
             moveAmount = 2
             break
           case 'swap': {
-            // Swap with random other player
-            const otherPlayers = state.players.filter((_, i) => i !== state.currentPlayerIndex)
-            if (otherPlayers.length > 0) {
-              const randomOther = otherPlayers[Math.floor(Math.random() * otherPlayers.length)]
-              const otherIndex = state.players.findIndex(p => p.name === randomOther.name)
-              const newPlayers = [...state.players]
-              const tempPos = newPlayers[state.currentPlayerIndex].position
-              newPlayers[state.currentPlayerIndex] = { ...currentPlayer, position: randomOther.position }
-              newPlayers[otherIndex] = { ...randomOther, position: tempPos }
-
-              // Check for winner after swap
-              const winner = newPlayers.find(p => p.position >= state.board.length - 1)
-
-              return {
-                ...state,
-                players: newPlayers,
-                phase: winner ? 'effect' : 'waiting',
-                winner: winner || null,
-                currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex(state),
-                currentQuestion: winner ? state.currentQuestion : getNextQuestion(state).question,
-                questionsQueue: winner ? state.questionsQueue : getNextQuestion(state).queue
-              }
+            // Show swap selection UI
+            return {
+              ...state,
+              phase: 'swap_choosing',
+              doubleQuestion: false
             }
-            break
           }
         }
       }
@@ -155,6 +140,73 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'SELECT_SWAP_PLAYER': {
+      // Swap with selected player
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const otherPlayer = state.players[action.playerIndex]
+      const newPlayers = [...state.players]
+      const currentPlayerOldPos = currentPlayer.position
+      const otherPlayerOldPos = otherPlayer.position
+
+      newPlayers[state.currentPlayerIndex] = { ...currentPlayer, position: otherPlayerOldPos }
+      newPlayers[action.playerIndex] = { ...otherPlayer, position: currentPlayerOldPos }
+
+      const swapInfo: SwapInfo = {
+        currentPlayer: newPlayers[state.currentPlayerIndex],
+        otherPlayer: newPlayers[action.playerIndex],
+        currentPlayerOldPosition: currentPlayerOldPos,
+        otherPlayerOldPosition: otherPlayerOldPos
+      }
+
+      return {
+        ...state,
+        players: newPlayers,
+        phase: 'swap_effect',
+        swapInfo
+      }
+    }
+
+    case 'DECLINE_SWAP': {
+      // Don't swap, just move forward 1 step
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const newPosition = Math.min(currentPlayer.position + 1, state.board.length - 1)
+      const newPlayers = [...state.players]
+      newPlayers[state.currentPlayerIndex] = { ...currentPlayer, position: newPosition }
+
+      const winner = newPosition >= state.board.length - 1 ? newPlayers[state.currentPlayerIndex] : null
+      const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+      const { question, queue } = getNextQuestion(state)
+
+      return {
+        ...state,
+        players: newPlayers,
+        phase: winner ? 'effect' : 'waiting',
+        winner,
+        skipNextTurn: newSkipList,
+        currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentQuestion: winner ? state.currentQuestion : question,
+        questionsQueue: winner ? state.questionsQueue : queue
+      }
+    }
+
+    case 'DISMISS_SWAP': {
+      // After swap UI is dismissed, check for winner and move to next player
+      const winner = state.players.find(p => p.position >= state.board.length - 1) || null
+      const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+      const { question, queue } = getNextQuestion(state)
+
+      return {
+        ...state,
+        phase: winner ? 'effect' : 'waiting',
+        winner,
+        swapInfo: null,
+        skipNextTurn: newSkipList,
+        currentPlayerIndex: winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList }),
+        currentQuestion: winner ? state.currentQuestion : question,
+        questionsQueue: winner ? state.questionsQueue : queue
+      }
+    }
+
     default:
       return state
   }
@@ -175,7 +227,8 @@ function createInitialState(players: Player[], boardLength: number): GameState {
     skipNextTurn: [],
     doubleQuestion: false,
     questionsQueue: restQuestions,
-    winner: null
+    winner: null,
+    swapInfo: null
   }
 }
 
@@ -191,6 +244,9 @@ export function useGameState(players: Player[], boardLength: number) {
   const answerCorrect = useCallback(() => dispatch({ type: 'ANSWER_CORRECT' }), [])
   const answerWrong = useCallback(() => dispatch({ type: 'ANSWER_WRONG' }), [])
   const skipQuestion = useCallback(() => dispatch({ type: 'SKIP_QUESTION' }), [])
+  const selectSwapPlayer = useCallback((playerIndex: number) => dispatch({ type: 'SELECT_SWAP_PLAYER', playerIndex }), [])
+  const declineSwap = useCallback(() => dispatch({ type: 'DECLINE_SWAP' }), [])
+  const dismissSwap = useCallback(() => dispatch({ type: 'DISMISS_SWAP' }), [])
 
   return {
     state,
@@ -198,6 +254,9 @@ export function useGameState(players: Player[], boardLength: number) {
     timerEnd,
     answerCorrect,
     answerWrong,
-    skipQuestion
+    skipQuestion,
+    selectSwapPlayer,
+    declineSwap,
+    dismissSwap
   }
 }
