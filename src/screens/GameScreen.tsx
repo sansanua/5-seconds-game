@@ -74,7 +74,7 @@ export default function GameScreen({ players, boardLength, difficultyLevel, save
   const [showSettings, setShowSettings] = useState(false)
 
   // Show question immediately setting
-  const [showQuestionImmediately] = useState(() => {
+  const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
     return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
   })
 
@@ -120,6 +120,8 @@ export default function GameScreen({ players, boardLength, difficultyLevel, save
   }
 
   const closeSettings = () => {
+    // Re-read settings that might have changed
+    setShowQuestionImmediately(localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true')
     setShowSettings(false)
   }
 
@@ -127,6 +129,8 @@ export default function GameScreen({ players, boardLength, difficultyLevel, save
     // Update game state players and notify parent
     updatePlayers(editedPlayers)
     onUpdatePlayers(editedPlayers)
+    // Re-read settings that might have changed
+    setShowQuestionImmediately(localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true')
     setShowSettings(false)
   }
 
