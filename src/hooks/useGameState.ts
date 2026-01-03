@@ -303,30 +303,73 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     }
 
     case 'UPDATE_PLAYERS': {
-      // Update player data while preserving positions
-      const updatedPlayers = state.players.map((currentPlayer, index) => {
-        const editedPlayer = action.players[index]
-        if (editedPlayer) {
+      // Handle adding, removing, and updating players
+      const oldPlayerNames = new Set(state.players.map(p => p.name))
+      const newPlayerNames = new Set(action.players.map(p => p.name))
+
+      // Build updated players list preserving positions for existing players
+      const updatedPlayers: Player[] = action.players.map(newPlayer => {
+        // Find matching player by name in current state
+        const existingPlayer = state.players.find(p => p.name === newPlayer.name)
+        if (existingPlayer) {
+          // Existing player - keep position
           return {
-            ...editedPlayer,
-            position: currentPlayer.position // Keep current position
+            ...newPlayer,
+            position: existingPlayer.position
+          }
+        } else {
+          // New player - start at position 0
+          return {
+            ...newPlayer,
+            position: 0
           }
         }
-        return currentPlayer
       })
 
-      // Update playerStats keys if names changed
+      // Update playerStats
       const newPlayerStats: Record<string, PlayerStats> = {}
-      state.players.forEach((oldPlayer, index) => {
-        const newPlayer = updatedPlayers[index]
-        const oldStats = state.playerStats[oldPlayer.name] || { correct: 0, wrong: 0, skipped: 0 }
-        newPlayerStats[newPlayer.name] = oldStats
+      action.players.forEach(player => {
+        // Try to find existing stats by name
+        const existingStats = state.playerStats[player.name]
+        if (existingStats) {
+          newPlayerStats[player.name] = existingStats
+        } else {
+          // New player - initialize stats
+          newPlayerStats[player.name] = { correct: 0, wrong: 0, skipped: 0 }
+        }
+      })
+
+      // Adjust currentPlayerIndex if needed
+      let newCurrentPlayerIndex = state.currentPlayerIndex
+      const currentPlayerName = state.players[state.currentPlayerIndex]?.name
+
+      if (currentPlayerName && newPlayerNames.has(currentPlayerName)) {
+        // Current player still exists - find their new index
+        newCurrentPlayerIndex = updatedPlayers.findIndex(p => p.name === currentPlayerName)
+      } else {
+        // Current player was removed - move to next valid player
+        newCurrentPlayerIndex = Math.min(state.currentPlayerIndex, updatedPlayers.length - 1)
+        if (newCurrentPlayerIndex < 0) newCurrentPlayerIndex = 0
+      }
+
+      // Update skipNextTurn list - remove indices of removed players and remap
+      const newSkipList: number[] = []
+      state.skipNextTurn.forEach(skipIndex => {
+        const skipPlayerName = state.players[skipIndex]?.name
+        if (skipPlayerName && newPlayerNames.has(skipPlayerName)) {
+          const newIndex = updatedPlayers.findIndex(p => p.name === skipPlayerName)
+          if (newIndex >= 0) {
+            newSkipList.push(newIndex)
+          }
+        }
       })
 
       return {
         ...state,
         players: updatedPlayers,
-        playerStats: newPlayerStats
+        playerStats: newPlayerStats,
+        currentPlayerIndex: newCurrentPlayerIndex,
+        skipNextTurn: newSkipList
       }
     }
 
