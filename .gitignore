@@ -1,6 +1,7 @@
-# Claude/Beads
+# Claude/Beads/Plans
 .claude/
 .beads/
+docs/plans/
 
 # Logs
 logs
