@@ -1,73 +1,60 @@
-# React + TypeScript + Vite
+# 5 Секунд
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-гра "5 секунд" — настільна вікторина для компанії, де потрібно швидко назвати 3 відповіді за 5 секунд.
 
-Currently, two official plugins are available:
+## Правила гри
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+1. Гравці по черзі отримують запитання
+2. Потрібно назвати 3 відповіді за 5 секунд
+3. Якщо відповідь правильна — гравець рухається вперед
+4. Хто першим дійде до фінішу — той переміг
 
-## React Compiler
+## Особливості
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Підтримка від 2 до 8 гравців
+- Персоналізація гравців (ім'я, колір, емодзі)
+- 4 рівні складності (легкий, середній, складний, експерт)
+- Спеціальні клітинки на полі (бонус, обмін, пропуск і т.д.)
+- Режим для дітей (спрощені запитання)
+- Автозбереження гри
+- PWA — можна встановити на телефон
+- Адаптивний дизайн
 
-## Expanding the ESLint configuration
+## Технології
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 19
+- TypeScript
+- Vite
+- PWA (vite-plugin-pwa)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Запуск
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Встановити залежності
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Запустити dev-сервер
+npm run dev
+
+# Зібрати для продакшену
+npm run build
+
+# Переглянути продакшен-збірку
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Структура проекту
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/     # UI-компоненти (ігрове поле, таймер)
+├── screens/        # Екрани гри (старт, налаштування, гра, перемога)
+├── hooks/          # React хуки (useGameState, useFullscreen)
+├── data/           # Дані запитань
+├── utils/          # Утиліти (збереження, логіка гри)
+└── types.ts        # TypeScript типи
+```
+
+## Ліцензія
+
+MIT
