@@ -301,7 +301,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       newPlayers[state.currentPlayerIndex] = { ...currentPlayer, position: newPosition }
 
       const winner = newPosition >= state.board.length - 1 ? newPlayers[state.currentPlayerIndex] : null
-      const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+
+      // Check if player landed on skip cell
+      const landedCell = state.board[newPosition]
+      let newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+      if (landedCell.type === 'special' && landedCell.specialType === 'skip') {
+        newSkipList = [...newSkipList, state.currentPlayerIndex]
+      }
+
       const nextPlayerIndex = winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
       const nextPlayer = newPlayers[nextPlayerIndex]
       const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
@@ -322,7 +329,15 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case 'DISMISS_SWAP': {
       // After swap UI is dismissed, check for winner and move to next player
       const winner = state.players.find(p => p.position >= state.board.length - 1) || null
-      const newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+
+      // Check if current player (who just swapped) landed on skip cell
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      const landedCell = state.board[currentPlayer.position]
+      let newSkipList = state.skipNextTurn.filter(i => i !== state.currentPlayerIndex)
+      if (landedCell.type === 'special' && landedCell.specialType === 'skip') {
+        newSkipList = [...newSkipList, state.currentPlayerIndex]
+      }
+
       const nextPlayerIndex = winner ? state.currentPlayerIndex : getNextPlayerIndex({ ...state, skipNextTurn: newSkipList })
       const nextPlayer = state.players[nextPlayerIndex]
       const { question, queue, kidsQueue } = getNextQuestion(state, nextPlayer)
