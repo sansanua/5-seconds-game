@@ -9,6 +9,7 @@
 .game-board-section {
   flex: 0 0 auto;
   margin-bottom: 10px;
+  padding-top: 50px; /* Space for fixed back/settings buttons */
 }
 
 .question-section {
