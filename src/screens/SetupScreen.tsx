@@ -2,19 +2,24 @@
 import { useState, useRef, useEffect } from 'react'
 import EmojiPicker, { Theme } from 'emoji-picker-react'
 import type { EmojiClickData } from 'emoji-picker-react'
-import type { Screen, Player } from '../types'
+import type { Screen, Player, DifficultyLevel } from '../types'
+import { DIFFICULTY_RANGES } from '../types'
 import { PLAYER_COLORS } from '../utils/game'
 import { getPlayerInitials } from '../utils/playerDisplay'
+import { getFilteredQuestions } from '../hooks/useGameState'
+import QuestionsPreviewModal from '../components/QuestionsPreviewModal'
 import './SetupScreen.css'
 
 export interface SetupScreenProps {
   onNavigate: (screen: Screen) => void
-  onStartGame: (players: Player[], boardLength: number) => void
+  onStartGame: (players: Player[], boardLength: number, difficultyLevel: DifficultyLevel) => void
   // Edit mode props
   mode?: 'setup' | 'edit'
   initialPlayers?: Player[]
   initialBoardLength?: number
+  initialDifficultyLevel?: DifficultyLevel
   onSave?: (players: Player[]) => void
+  onChangeDifficulty?: (level: DifficultyLevel) => void
   onClose?: () => void
 }
 
@@ -22,6 +27,7 @@ const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
 const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
 const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
 const ENABLE_SPECIAL_CELLS_KEY = 'enableSpecialCells'
+const DIFFICULTY_LEVEL_KEY = 'difficultyLevel'
 
 export default function SetupScreen({
   onNavigate,
@@ -29,7 +35,9 @@ export default function SetupScreen({
   mode = 'setup',
   initialPlayers = [],
   initialBoardLength = 15,
+  initialDifficultyLevel,
   onSave,
+  onChangeDifficulty,
   onClose
 }: SetupScreenProps) {
   const isEditMode = mode === 'edit'
@@ -37,6 +45,12 @@ export default function SetupScreen({
   const [newName, setNewName] = useState('')
   const [isChild, setIsChild] = useState(false)
   const [boardLength, setBoardLength] = useState<10 | 15 | 20>(initialBoardLength as 10 | 15 | 20)
+  const [difficultyLevel, setDifficultyLevel] = useState<DifficultyLevel>(() => {
+    if (initialDifficultyLevel) return initialDifficultyLevel
+    const saved = localStorage.getItem(DIFFICULTY_LEVEL_KEY) as DifficultyLevel | null
+    return saved && ['easy', 'medium', 'hard', 'expert'].includes(saved) ? saved : 'medium'
+  })
+  const [showQuestionsModal, setShowQuestionsModal] = useState(false)
   const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
     return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
   })
@@ -139,9 +153,17 @@ export default function SetupScreen({
     setEditingPlayerIndex(editingPlayerIndex === index ? null : index)
   }
 
+  const handleDifficultyChange = (level: DifficultyLevel) => {
+    setDifficultyLevel(level)
+    localStorage.setItem(DIFFICULTY_LEVEL_KEY, level)
+    if (isEditMode && onChangeDifficulty) {
+      onChangeDifficulty(level)
+    }
+  }
+
   const startGame = () => {
     if (players.length >= 2) {
-      onStartGame(players, boardLength)
+      onStartGame(players, boardLength, difficultyLevel)
       onNavigate('game')
     }
   }
@@ -278,6 +300,31 @@ export default function SetupScreen({
         </label>
       </div>
 
+      <div className="difficulty-section">
+        <h3>Рівень складності</h3>
+        <div className="difficulty-buttons">
+          {(['easy', 'medium', 'hard', 'expert'] as const).map(level => {
+            const { label, min, max } = DIFFICULTY_RANGES[level]
+            return (
+              <button
+                key={level}
+                className={`btn-difficulty ${difficultyLevel === level ? 'active' : ''}`}
+                onClick={() => handleDifficultyChange(level)}
+              >
+                {label}
+                <span className="difficulty-range">{min}-{max}</span>
+              </button>
+            )
+          })}
+        </div>
+        <button
+          className="btn-preview-questions"
+          onClick={() => setShowQuestionsModal(true)}
+        >
+          Переглянути питання ({getFilteredQuestions(difficultyLevel).filtered.length})
+        </button>
+      </div>
+
       <div className="settings-section">
         <h3>Налаштування</h3>
         <label className="setting-toggle">
@@ -332,6 +379,14 @@ export default function SetupScreen({
           ? `Додайте ще ${2 - players.length} гравців`
           : isEditMode ? 'Зберегти' : 'Почати гру'}
       </button>
+
+      {showQuestionsModal && (
+        <QuestionsPreviewModal
+          questions={getFilteredQuestions(difficultyLevel).filtered}
+          difficultyLevel={difficultyLevel}
+          onClose={() => setShowQuestionsModal(false)}
+        />
+      )}
     </div>
   )
 }

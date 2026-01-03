@@ -1,6 +1,6 @@
 // src/screens/GameScreen.tsx
 import { useCallback, useEffect, useState } from 'react'
-import type { Screen, Player, Cell, PlayerStats } from '../types'
+import type { Screen, Player, Cell, PlayerStats, DifficultyLevel } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import { useFullscreen } from '../hooks/useFullscreen'
 import GameBoard from '../components/GameBoard'
@@ -15,9 +15,11 @@ const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
 interface Props {
   players: Player[]
   boardLength: number
+  difficultyLevel: DifficultyLevel
   onNavigate: (screen: Screen) => void
   onGameEnd: (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => void
   onUpdatePlayers: (players: Player[]) => void
+  onChangeDifficulty: (level: DifficultyLevel) => void
 }
 
 const SPECIAL_MESSAGES: Record<string, string> = {
@@ -29,15 +31,15 @@ const SPECIAL_MESSAGES: Record<string, string> = {
   bonus: '🎁 Бонус +1!'
 }
 
-export default function GameScreen({ players, boardLength, onNavigate, onGameEnd, onUpdatePlayers }: Props) {
-  const { state, startCountdown, countdownEnd, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap, updatePlayers } = useGameState(players, boardLength)
+export default function GameScreen({ players, boardLength, difficultyLevel, onNavigate, onGameEnd, onUpdatePlayers, onChangeDifficulty }: Props) {
+  const { state, startCountdown, countdownEnd, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap, updatePlayers, changeDifficulty } = useGameState(players, boardLength, difficultyLevel)
   const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
 
   // Settings modal state
   const [showSettings, setShowSettings] = useState(false)
 
   // Show question immediately setting
-  const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
+  const [showQuestionImmediately] = useState(() => {
     return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
   })
 
@@ -330,9 +332,14 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
           mode="edit"
           initialPlayers={state.players}
           initialBoardLength={boardLength}
+          initialDifficultyLevel={state.difficultyLevel}
           onNavigate={onNavigate}
           onStartGame={() => {}}
           onSave={handleSaveSettings}
+          onChangeDifficulty={(level) => {
+            changeDifficulty(level)
+            onChangeDifficulty(level)
+          }}
           onClose={closeSettings}
         />
       )}

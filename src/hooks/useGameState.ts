@@ -1,10 +1,20 @@
 // src/hooks/useGameState.ts
 import { useReducer, useCallback } from 'react'
-import type { GameState, Player, Question, SwapInfo, PlayerStats } from '../types'
+import type { GameState, Player, Question, SwapInfo, PlayerStats, DifficultyLevel } from '../types'
+import { DIFFICULTY_RANGES } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
 
-const kidsQuestions = allQuestions.filter(q => q.forKids)
+function filterByDifficulty(questions: Question[], level: DifficultyLevel): Question[] {
+  const { min, max } = DIFFICULTY_RANGES[level]
+  return questions.filter(q => q.difficulty >= min && q.difficulty <= max)
+}
+
+export function getFilteredQuestions(level: DifficultyLevel) {
+  const filtered = filterByDifficulty(allQuestions, level)
+  const kidsFiltered = filtered.filter(q => q.forKids)
+  return { filtered, kidsFiltered }
+}
 
 const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
 const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
@@ -33,6 +43,7 @@ type GameAction =
   | { type: 'DECLINE_SWAP' }
   | { type: 'DISMISS_SWAP' }
   | { type: 'UPDATE_PLAYERS'; players: Player[] }
+  | { type: 'CHANGE_DIFFICULTY'; level: DifficultyLevel }
 
 function getNextPlayerIndex(state: GameState): number {
   let next = (state.currentPlayerIndex + 1) % state.players.length
@@ -64,18 +75,23 @@ function getNextQuestion(state: GameState, forPlayer?: Player): {
   kidsQueue: Question[]
 } {
   const player = forPlayer || state.players[state.currentPlayerIndex]
+  const { filtered, kidsFiltered } = getFilteredQuestions(state.difficultyLevel)
 
   if (player.isChild) {
-    // Kids get only kids questions
+    // Kids get only kids questions filtered by difficulty
     let kidsQueue = state.kidsQuestionsQueue
     if (kidsQueue.length === 0) {
       // Reshuffle kids questions if empty
-      kidsQueue = shuffle([...kidsQuestions])
+      kidsQueue = shuffle([...kidsFiltered])
       if (kidsQueue.length === 0) {
-        // Fallback: no kids questions, use all questions
-        console.warn('No kids questions available, using all questions')
+        // Fallback: no kids questions for this difficulty, use all filtered questions
+        console.warn('No kids questions available for this difficulty, using all filtered questions')
         let queue = state.questionsQueue
         if (queue.length === 0) {
+          queue = shuffle([...filtered])
+        }
+        if (queue.length === 0) {
+          // Ultimate fallback: use all questions
           queue = shuffle([...allQuestions])
         }
         const [question, ...rest] = queue
@@ -85,10 +101,14 @@ function getNextQuestion(state: GameState, forPlayer?: Player): {
     const [question, ...rest] = kidsQueue
     return { question, queue: state.questionsQueue, kidsQueue: rest }
   } else {
-    // Adults get all questions
+    // Adults get questions filtered by difficulty
     let queue = state.questionsQueue
     if (queue.length === 0) {
-      queue = shuffle([...allQuestions])
+      queue = shuffle([...filtered])
+      if (queue.length === 0) {
+        // Fallback: use all questions
+        queue = shuffle([...allQuestions])
+      }
     }
     const [question, ...rest] = queue
     return { question, queue: rest, kidsQueue: state.kidsQuestionsQueue }
@@ -322,7 +342,6 @@ function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'UPDATE_PLAYERS': {
       // Handle adding, removing, and updating players
-      const oldPlayerNames = new Set(state.players.map(p => p.name))
       const newPlayerNames = new Set(action.players.map(p => p.name))
 
       // Build updated players list preserving positions for existing players
@@ -391,14 +410,55 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       }
     }
 
+    case 'CHANGE_DIFFICULTY': {
+      // Change difficulty level, reset question queues, get new question for current player
+      const { filtered, kidsFiltered } = getFilteredQuestions(action.level)
+      const shuffledQuestions = shuffle([...filtered])
+      const shuffledKidsQuestions = shuffle([...kidsFiltered])
+
+      const currentPlayer = state.players[state.currentPlayerIndex]
+      let firstQuestion: Question
+      let restQuestions: Question[]
+      let restKidsQuestions: Question[]
+
+      if (currentPlayer.isChild && shuffledKidsQuestions.length > 0) {
+        [firstQuestion, ...restKidsQuestions] = shuffledKidsQuestions
+        restQuestions = shuffledQuestions
+      } else if (shuffledQuestions.length > 0) {
+        [firstQuestion, ...restQuestions] = shuffledQuestions
+        restKidsQuestions = shuffledKidsQuestions
+      } else {
+        // Fallback: use all questions if no questions for this difficulty
+        const allShuffled = shuffle([...allQuestions])
+        const allKidsShuffled = shuffle([...allQuestions.filter(q => q.forKids)])
+        if (currentPlayer.isChild && allKidsShuffled.length > 0) {
+          [firstQuestion, ...restKidsQuestions] = allKidsShuffled
+          restQuestions = allShuffled
+        } else {
+          [firstQuestion, ...restQuestions] = allShuffled
+          restKidsQuestions = allKidsShuffled
+        }
+      }
+
+      return {
+        ...state,
+        difficultyLevel: action.level,
+        questionsQueue: restQuestions,
+        kidsQuestionsQueue: restKidsQuestions,
+        currentQuestion: firstQuestion,
+        phase: 'waiting'
+      }
+    }
+
     default:
       return state
   }
 }
 
-function createInitialState(players: Player[], boardLength: number): GameState {
-  const shuffledQuestions = shuffle([...allQuestions])
-  const shuffledKidsQuestions = shuffle([...kidsQuestions])
+function createInitialState(players: Player[], boardLength: number, difficultyLevel: DifficultyLevel): GameState {
+  const { filtered, kidsFiltered } = getFilteredQuestions(difficultyLevel)
+  const shuffledQuestions = shuffle([...filtered])
+  const shuffledKidsQuestions = shuffle([...kidsFiltered])
 
   // First player determines which queue to use for first question
   const firstPlayer = players[0]
@@ -409,9 +469,20 @@ function createInitialState(players: Player[], boardLength: number): GameState {
   if (firstPlayer.isChild && shuffledKidsQuestions.length > 0) {
     [firstQuestion, ...restKidsQuestions] = shuffledKidsQuestions
     restQuestions = shuffledQuestions
-  } else {
+  } else if (shuffledQuestions.length > 0) {
     [firstQuestion, ...restQuestions] = shuffledQuestions
     restKidsQuestions = shuffledKidsQuestions
+  } else {
+    // Fallback: use all questions if no questions for this difficulty
+    const allShuffled = shuffle([...allQuestions])
+    const allKidsShuffled = shuffle([...allQuestions.filter(q => q.forKids)])
+    if (firstPlayer.isChild && allKidsShuffled.length > 0) {
+      [firstQuestion, ...restKidsQuestions] = allKidsShuffled
+      restQuestions = allShuffled
+    } else {
+      [firstQuestion, ...restQuestions] = allShuffled
+      restKidsQuestions = allKidsShuffled
+    }
   }
 
   const initialStats: Record<string, PlayerStats> = {}
@@ -433,15 +504,16 @@ function createInitialState(players: Player[], boardLength: number): GameState {
     kidsQuestionsQueue: restKidsQuestions,
     winner: null,
     swapInfo: null,
-    playerStats: initialStats
+    playerStats: initialStats,
+    difficultyLevel
   }
 }
 
-export function useGameState(players: Player[], boardLength: number) {
+export function useGameState(players: Player[], boardLength: number, difficultyLevel: DifficultyLevel = 'medium') {
   const [state, dispatch] = useReducer(
     gameReducer,
-    { players, boardLength },
-    ({ players, boardLength }) => createInitialState(players, boardLength)
+    { players, boardLength, difficultyLevel },
+    ({ players, boardLength, difficultyLevel }) => createInitialState(players, boardLength, difficultyLevel)
   )
 
   const startCountdown = useCallback(() => dispatch({ type: 'START_COUNTDOWN' }), [])
@@ -455,6 +527,7 @@ export function useGameState(players: Player[], boardLength: number) {
   const declineSwap = useCallback(() => dispatch({ type: 'DECLINE_SWAP' }), [])
   const dismissSwap = useCallback(() => dispatch({ type: 'DISMISS_SWAP' }), [])
   const updatePlayers = useCallback((players: Player[]) => dispatch({ type: 'UPDATE_PLAYERS', players }), [])
+  const changeDifficulty = useCallback((level: DifficultyLevel) => dispatch({ type: 'CHANGE_DIFFICULTY', level }), [])
 
   return {
     state,
@@ -468,6 +541,7 @@ export function useGameState(players: Player[], boardLength: number) {
     selectSwapPlayer,
     declineSwap,
     dismissSwap,
-    updatePlayers
+    updatePlayers,
+    changeDifficulty
   }
 }

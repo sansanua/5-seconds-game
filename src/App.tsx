@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Screen, Player, Cell, PlayerStats } from './types'
+import type { Screen, Player, Cell, PlayerStats, DifficultyLevel } from './types'
 import './App.css'
 import StartScreen from './screens/StartScreen'
 import SetupScreen from './screens/SetupScreen'
@@ -9,6 +9,7 @@ import VictoryScreen from './screens/VictoryScreen'
 interface GameData {
   players: Player[]
   boardLength: number
+  difficultyLevel: DifficultyLevel
   winner: Player | null
   board: Cell[]
   playerStats: Record<string, PlayerStats>
@@ -19,6 +20,7 @@ function App() {
   const [gameData, setGameData] = useState<GameData>({
     players: [],
     boardLength: 15,
+    difficultyLevel: 'medium',
     winner: null,
     board: [],
     playerStats: {}
@@ -26,8 +28,8 @@ function App() {
 
   const navigate = (newScreen: Screen) => setScreen(newScreen)
 
-  const handleStartGame = (players: Player[], boardLength: number) => {
-    setGameData({ players, boardLength, winner: null, board: [], playerStats: {} })
+  const handleStartGame = (players: Player[], boardLength: number, difficultyLevel: DifficultyLevel) => {
+    setGameData({ players, boardLength, difficultyLevel, winner: null, board: [], playerStats: {} })
   }
 
   const handleGameEnd = (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => {
@@ -43,7 +45,7 @@ function App() {
 
   const handleNewGame = () => {
     // Go back to setup with cleared players
-    setGameData({ players: [], boardLength: gameData.boardLength, winner: null, board: [], playerStats: {} })
+    setGameData({ players: [], boardLength: gameData.boardLength, difficultyLevel: gameData.difficultyLevel, winner: null, board: [], playerStats: {} })
     setScreen('setup')
   }
 
@@ -57,9 +59,11 @@ function App() {
         <GameScreen
           players={gameData.players}
           boardLength={gameData.boardLength}
+          difficultyLevel={gameData.difficultyLevel}
           onNavigate={navigate}
           onGameEnd={handleGameEnd}
           onUpdatePlayers={(players) => setGameData(prev => ({ ...prev, players }))}
+          onChangeDifficulty={(level) => setGameData(prev => ({ ...prev, difficultyLevel: level }))}
         />
       )
     case 'victory':

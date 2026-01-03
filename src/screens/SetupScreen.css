@@ -381,3 +381,65 @@
 .special-cells-toggle.readonly input {
   cursor: not-allowed;
 }
+
+/* Difficulty section */
+.difficulty-section {
+  background: rgba(255,255,255,0.1);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.difficulty-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn-difficulty {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-difficulty:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.btn-difficulty.active {
+  background: white;
+  color: #764ba2;
+  border-color: #f093fb;
+}
+
+.difficulty-range {
+  font-size: 0.7rem;
+  font-weight: normal;
+  opacity: 0.8;
+}
+
+.btn-preview-questions {
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  font-size: 0.9rem;
+  border: 1px dashed rgba(255,255,255,0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-preview-questions:hover {
+  background: rgba(255,255,255,0.25);
+  border-style: solid;
+}
