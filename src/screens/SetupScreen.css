@@ -1,6 +1,6 @@
 /* src/screens/SetupScreen.css */
 .setup-screen {
-  height: 100%;
+  min-height: 100%;
   padding: 20px;
   display: flex;
   flex-direction: column;
