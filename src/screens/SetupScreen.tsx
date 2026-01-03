@@ -7,23 +7,45 @@ import { PLAYER_COLORS } from '../utils/game'
 import { getPlayerInitials } from '../utils/playerDisplay'
 import './SetupScreen.css'
 
-interface Props {
+export interface SetupScreenProps {
   onNavigate: (screen: Screen) => void
   onStartGame: (players: Player[], boardLength: number) => void
+  // Edit mode props
+  mode?: 'setup' | 'edit'
+  initialPlayers?: Player[]
+  initialBoardLength?: number
+  onSave?: (players: Player[]) => void
+  onClose?: () => void
 }
 
 const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
 
-export default function SetupScreen({ onNavigate, onStartGame }: Props) {
-  const [players, setPlayers] = useState<Player[]>([])
+export default function SetupScreen({
+  onNavigate,
+  onStartGame,
+  mode = 'setup',
+  initialPlayers = [],
+  initialBoardLength = 15,
+  onSave,
+  onClose
+}: SetupScreenProps) {
+  const isEditMode = mode === 'edit'
+  const [players, setPlayers] = useState<Player[]>(initialPlayers)
   const [newName, setNewName] = useState('')
   const [isChild, setIsChild] = useState(false)
-  const [boardLength, setBoardLength] = useState<10 | 15 | 20>(15)
+  const [boardLength, setBoardLength] = useState<10 | 15 | 20>(initialBoardLength as 10 | 15 | 20)
   const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
     return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
   })
   const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
+
+  // Reset state when initialPlayers changes (for edit mode)
+  useEffect(() => {
+    if (isEditMode) {
+      setPlayers(initialPlayers)
+    }
+  }, [initialPlayers, isEditMode])
 
   const handleShowQuestionImmediatelyChange = (checked: boolean) => {
     setShowQuestionImmediately(checked)
@@ -92,13 +114,27 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
     }
   }
 
+  const handleSave = () => {
+    if (players.length >= 2 && onSave) {
+      onSave(players)
+    }
+  }
+
+  const handleBack = () => {
+    if (isEditMode && onClose) {
+      onClose()
+    } else {
+      onNavigate('start')
+    }
+  }
+
   return (
-    <div className="setup-screen">
-      <button className="btn-back" onClick={() => onNavigate('start')}>
-        ← Назад
+    <div className={`setup-screen ${isEditMode ? 'edit-mode' : ''}`}>
+      <button className="btn-back" onClick={handleBack}>
+        ← {isEditMode ? 'Скасувати' : 'Назад'}
       </button>
 
-      <h2>Нова гра</h2>
+      <h2>{isEditMode ? 'Налаштування гри' : 'Нова гра'}</h2>
 
       <div className="players-section">
         <h3>Гравці ({players.length})</h3>
@@ -173,14 +209,15 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
         </div>
       </div>
 
-      <div className="board-length-section">
-        <h3>Довжина поля</h3>
+      <div className={`board-length-section ${isEditMode ? 'readonly' : ''}`}>
+        <h3>Довжина поля {isEditMode && <span className="readonly-hint">(не можна змінити під час гри)</span>}</h3>
         <div className="length-buttons">
           {([10, 15, 20] as const).map(len => (
             <button
               key={len}
               className={`btn-length ${boardLength === len ? 'active' : ''}`}
-              onClick={() => setBoardLength(len)}
+              onClick={() => !isEditMode && setBoardLength(len)}
+              disabled={isEditMode}
             >
               {len}
               <span className="length-hint">
@@ -210,12 +247,12 @@ export default function SetupScreen({ onNavigate, onStartGame }: Props) {
 
       <button
         className="btn-start"
-        onClick={startGame}
+        onClick={isEditMode ? handleSave : startGame}
         disabled={players.length < 2}
       >
         {players.length < 2
           ? `Додайте ще ${2 - players.length} гравців`
-          : 'Почати гру'}
+          : isEditMode ? 'Зберегти' : 'Почати гру'}
       </button>
     </div>
   )

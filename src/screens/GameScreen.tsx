@@ -1,13 +1,11 @@
 // src/screens/GameScreen.tsx
-import { useCallback, useEffect, useState, useRef } from 'react'
-import EmojiPicker, { Theme } from 'emoji-picker-react'
-import type { EmojiClickData } from 'emoji-picker-react'
+import { useCallback, useEffect, useState } from 'react'
 import type { Screen, Player, Cell, PlayerStats } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import { useFullscreen } from '../hooks/useFullscreen'
-import { getPlayerInitials } from '../utils/playerDisplay'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'
+import SetupScreen from './SetupScreen'
 import './GameScreen.css'
 
 const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
@@ -35,9 +33,6 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
 
   // Settings modal state
   const [showSettings, setShowSettings] = useState(false)
-  const [editingPlayers, setEditingPlayers] = useState<Player[]>([])
-  const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null)
-  const emojiPickerRef = useRef<HTMLDivElement>(null)
 
   // Show question immediately setting
   const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
@@ -46,20 +41,6 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
 
   // Countdown state
   const [countdownValue, setCountdownValue] = useState<number | null>(null)
-
-  // Close emoji picker when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target as Node)) {
-        setEditingPlayerIndex(null)
-      }
-    }
-
-    if (editingPlayerIndex !== null) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [editingPlayerIndex])
 
   // Countdown timer effect
   useEffect(() => {
@@ -95,58 +76,19 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
     }
   }, [showQuestionImmediately, state.players, state.currentPlayerIndex, startTimer, startCountdown])
 
-  // Handler for settings toggle
-  const handleShowQuestionImmediatelyChange = (checked: boolean) => {
-    setShowQuestionImmediately(checked)
-    localStorage.setItem(SHOW_QUESTION_IMMEDIATELY_KEY, String(checked))
-  }
-
   const openSettings = () => {
-    setEditingPlayers(state.players.map(p => ({ ...p })))
     setShowSettings(true)
   }
 
   const closeSettings = () => {
     setShowSettings(false)
-    setEditingPlayerIndex(null)
   }
 
-  const saveSettings = () => {
+  const handleSaveSettings = (editedPlayers: Player[]) => {
     // Update game state players and notify parent
-    updatePlayers(editingPlayers)
-    onUpdatePlayers(editingPlayers)
+    updatePlayers(editedPlayers)
+    onUpdatePlayers(editedPlayers)
     setShowSettings(false)
-    setEditingPlayerIndex(null)
-  }
-
-  const handlePlayerNameChange = (index: number, name: string) => {
-    setEditingPlayers(editingPlayers.map((p, i) =>
-      i === index ? { ...p, name } : p
-    ))
-  }
-
-  const handleIsChildToggle = (index: number) => {
-    setEditingPlayers(editingPlayers.map((p, i) =>
-      i === index ? { ...p, isChild: !p.isChild } : p
-    ))
-  }
-
-  const handleEmojiClick = (emojiData: EmojiClickData, playerIndex: number) => {
-    setEditingPlayers(editingPlayers.map((p, i) =>
-      i === playerIndex ? { ...p, emoji: emojiData.emoji } : p
-    ))
-    setEditingPlayerIndex(null)
-  }
-
-  const handleRemoveEmoji = (playerIndex: number) => {
-    setEditingPlayers(editingPlayers.map((p, i) =>
-      i === playerIndex ? { ...p, emoji: undefined } : p
-    ))
-    setEditingPlayerIndex(null)
-  }
-
-  const handleAvatarClick = (index: number) => {
-    setEditingPlayerIndex(editingPlayerIndex === index ? null : index)
   }
 
   const handleBack = () => {
@@ -380,99 +322,17 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
         </div>
       )}
 
-      {/* Settings Modal */}
+      {/* Settings Screen (using SetupScreen in edit mode) */}
       {showSettings && (
-        <div className="settings-modal-overlay">
-          <div className="settings-modal">
-            <div className="settings-modal-header">
-              <h3>Налаштування</h3>
-              <button className="btn-close-settings" onClick={closeSettings}>
-                &#x2715;
-              </button>
-            </div>
-
-            {/* Game settings section */}
-            <div className="settings-game-options">
-              <label className="setting-toggle-game">
-                <input
-                  type="checkbox"
-                  checked={showQuestionImmediately}
-                  onChange={e => handleShowQuestionImmediatelyChange(e.target.checked)}
-                />
-                <span className="setting-label-game">Показувати питання одразу</span>
-              </label>
-            </div>
-
-            <div className="settings-section-title">Гравці</div>
-            <div className="settings-players-list">
-              {editingPlayers.map((player, index) => (
-                <div key={index} className={`settings-player-item ${player.isChild ? 'player-child' : ''}`}>
-                  <button
-                    className="player-avatar-btn"
-                    onClick={() => handleAvatarClick(index)}
-                    title="Натисніть щоб змінити емодзі"
-                  >
-                    {player.emoji ? (
-                      <span className="player-emoji">{player.emoji}</span>
-                    ) : (
-                      <span
-                        className="player-color"
-                        style={{ backgroundColor: player.color }}
-                      >
-                        {getPlayerInitials(player.name)}
-                      </span>
-                    )}
-                  </button>
-                  {editingPlayerIndex === index && (
-                    <div className="emoji-picker-popup settings-emoji-picker" ref={emojiPickerRef}>
-                      <div className="emoji-picker-header">
-                        {player.emoji && (
-                          <button
-                            className="btn-remove-emoji"
-                            onClick={() => handleRemoveEmoji(index)}
-                          >
-                            Видалити емодзі
-                          </button>
-                        )}
-                      </div>
-                      <EmojiPicker
-                        onEmojiClick={(data) => handleEmojiClick(data, index)}
-                        theme={Theme.DARK}
-                        width={340}
-                        height={420}
-                        searchPlaceholder="Пошук..."
-                        previewConfig={{ showPreview: false }}
-                      />
-                    </div>
-                  )}
-                  <input
-                    type="text"
-                    className="settings-player-name-input"
-                    value={player.name}
-                    onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                    maxLength={20}
-                  />
-                  <label className="settings-child-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={player.isChild}
-                      onChange={() => handleIsChildToggle(index)}
-                    />
-                    <span className="child-label">Дитина</span>
-                  </label>
-                </div>
-              ))}
-            </div>
-            <div className="settings-modal-footer">
-              <button className="btn-cancel-settings" onClick={closeSettings}>
-                Скасувати
-              </button>
-              <button className="btn-save-settings" onClick={saveSettings}>
-                Зберегти
-              </button>
-            </div>
-          </div>
-        </div>
+        <SetupScreen
+          mode="edit"
+          initialPlayers={state.players}
+          initialBoardLength={boardLength}
+          onNavigate={onNavigate}
+          onStartGame={() => {}}
+          onSave={handleSaveSettings}
+          onClose={closeSettings}
+        />
       )}
 
       {isSupported && (
