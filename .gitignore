@@ -1,3 +1,7 @@
+# Claude/Beads
+.claude/
+.beads/
+
 # Logs
 logs
 *.log
