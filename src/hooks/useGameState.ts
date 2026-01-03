@@ -8,11 +8,16 @@ const kidsQuestions = allQuestions.filter(q => q.forKids)
 
 const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
 const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
+const ENABLE_SPECIAL_CELLS_KEY = 'enableSpecialCells'
 
 function getTimerDurations() {
   const adultDuration = parseInt(localStorage.getItem(ADULT_TIMER_DURATION_KEY) || '5', 10)
   const childDuration = parseInt(localStorage.getItem(CHILD_TIMER_DURATION_KEY) || '10', 10)
   return { adultDuration, childDuration }
+}
+
+function getEnableSpecialCells(): boolean {
+  return localStorage.getItem(ENABLE_SPECIAL_CELLS_KEY) !== 'false'
 }
 
 type GameAction =
@@ -417,7 +422,7 @@ function createInitialState(players: Player[], boardLength: number): GameState {
   return {
     players: players.map(p => ({ ...p, position: 0 })),
     currentPlayerIndex: 0,
-    board: generateBoard(boardLength),
+    board: generateBoard(boardLength, getEnableSpecialCells()),
     boardLength,
     phase: 'waiting',
     currentQuestion: firstQuestion,

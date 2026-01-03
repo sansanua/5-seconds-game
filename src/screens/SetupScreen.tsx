@@ -21,6 +21,7 @@ export interface SetupScreenProps {
 const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
 const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
 const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
+const ENABLE_SPECIAL_CELLS_KEY = 'enableSpecialCells'
 
 export default function SetupScreen({
   onNavigate,
@@ -47,6 +48,10 @@ export default function SetupScreen({
     const saved = localStorage.getItem(CHILD_TIMER_DURATION_KEY)
     return saved ? parseInt(saved, 10) : 10
   })
+  const [enableSpecialCells, setEnableSpecialCells] = useState(() => {
+    const saved = localStorage.getItem(ENABLE_SPECIAL_CELLS_KEY)
+    return saved !== 'false' // Default to true
+  })
   const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +77,11 @@ export default function SetupScreen({
     const newValue = Math.max(1, Math.min(60, value))
     setChildTimerDuration(newValue)
     localStorage.setItem(CHILD_TIMER_DURATION_KEY, String(newValue))
+  }
+
+  const handleEnableSpecialCellsChange = (checked: boolean) => {
+    setEnableSpecialCells(checked)
+    localStorage.setItem(ENABLE_SPECIAL_CELLS_KEY, String(checked))
   }
 
   // Close emoji picker when clicking outside
@@ -248,6 +258,24 @@ export default function SetupScreen({
             </button>
           ))}
         </div>
+
+        <label className={`setting-toggle special-cells-toggle ${isEditMode ? 'readonly' : ''}`}>
+          <input
+            type="checkbox"
+            checked={enableSpecialCells}
+            onChange={e => !isEditMode && handleEnableSpecialCellsChange(e.target.checked)}
+            disabled={isEditMode}
+          />
+          <span className="setting-label">
+            Спеціальні клітинки
+            {isEditMode && <span className="readonly-hint">(не можна змінити під час гри)</span>}
+          </span>
+          <span className="setting-hint">
+            {enableSpecialCells
+              ? 'Бонуси та перешкоди на полі (⏪⏭️🔄⏱️❓🎁)'
+              : 'Без спеціальних ефектів, тільки звичайні клітинки'}
+          </span>
+        </label>
       </div>
 
       <div className="settings-section">

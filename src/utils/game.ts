@@ -12,12 +12,12 @@ export function shuffle<T>(array: T[]): T[] {
   return result
 }
 
-// Generate board with special cells every 5th position
-export function generateBoard(length: number): Cell[] {
+// Generate board with optional special cells every 5th position
+export function generateBoard(length: number, enableSpecialCells: boolean = true): Cell[] {
   const board: Cell[] = []
   for (let i = 0; i < length; i++) {
     // Special cell every 5th position (indices 4, 9, 14...), but not first or last
-    if (i > 0 && i < length - 1 && (i + 1) % 5 === 0) {
+    if (enableSpecialCells && i > 0 && i < length - 1 && (i + 1) % 5 === 0) {
       board.push({
         type: 'special',
         specialType: SPECIAL_TYPES[Math.floor(Math.random() * SPECIAL_TYPES.length)]

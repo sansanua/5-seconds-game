@@ -367,3 +367,17 @@
 .timer-hint {
   margin-top: 4px;
 }
+
+/* Special cells toggle in board section */
+.special-cells-toggle {
+  margin-top: 16px;
+}
+
+.special-cells-toggle.readonly {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.special-cells-toggle.readonly input {
+  cursor: not-allowed;
+}
