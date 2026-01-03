@@ -9,6 +9,8 @@ import SetupScreen from './SetupScreen'
 import './GameScreen.css'
 
 const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
+const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
+const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
 
 interface Props {
   players: Player[]
@@ -103,11 +105,11 @@ export default function GameScreen({ players, boardLength, onNavigate, onGameEnd
 
   // Determine timer duration display
   const isFastCell = currentCell.type === 'special' && currentCell.specialType === 'fast'
-  const timerDurationDisplay = currentPlayer.isChild
-    ? '10 сек'
-    : isFastCell
-      ? '3 сек'
-      : '5 сек'
+  const adultDuration = parseInt(localStorage.getItem(ADULT_TIMER_DURATION_KEY) || '5', 10)
+  const childDuration = parseInt(localStorage.getItem(CHILD_TIMER_DURATION_KEY) || '10', 10)
+  const baseDuration = currentPlayer.isChild ? childDuration : adultDuration
+  const displayDuration = isFastCell ? Math.max(1, baseDuration - 2) : baseDuration
+  const timerDurationDisplay = `${displayDuration} сек`
   const timerEmoji = currentPlayer.isChild ? ' \u{1F476}' : isFastCell ? ' \u26A1' : ''
 
   // Determine if question should be visible

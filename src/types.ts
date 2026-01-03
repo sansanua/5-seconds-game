@@ -39,7 +39,7 @@ export interface GameState {
   boardLength: number
   phase: GamePhase
   currentQuestion: Question | null
-  timerDuration: 5 | 3 | 10
+  timerDuration: number
   skipNextTurn: number[]
   doubleQuestion: boolean
   questionsQueue: Question[]

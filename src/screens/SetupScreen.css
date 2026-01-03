@@ -329,3 +329,41 @@
   opacity: 0.7;
   margin-left: 8px;
 }
+
+/* Timer settings */
+.timer-settings {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timer-setting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer-setting label {
+  flex: 1;
+  font-size: 1rem;
+}
+
+.timer-setting input[type="number"] {
+  width: 70px;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+}
+
+.timer-setting input[type="number"]:focus {
+  outline: 2px solid #f093fb;
+}
+
+.timer-hint {
+  margin-top: 4px;
+}

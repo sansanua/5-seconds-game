@@ -6,6 +6,15 @@ import { questions as allQuestions } from '../data/questions'
 
 const kidsQuestions = allQuestions.filter(q => q.forKids)
 
+const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
+const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
+
+function getTimerDurations() {
+  const adultDuration = parseInt(localStorage.getItem(ADULT_TIMER_DURATION_KEY) || '5', 10)
+  const childDuration = parseInt(localStorage.getItem(CHILD_TIMER_DURATION_KEY) || '10', 10)
+  return { adultDuration, childDuration }
+}
+
 type GameAction =
   | { type: 'START_COUNTDOWN' }
   | { type: 'COUNTDOWN_END' }
@@ -91,9 +100,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const currentCell = state.board[currentPlayer.position]
       const isFast = currentCell.type === 'special' && currentCell.specialType === 'fast'
       const isDouble = currentCell.type === 'special' && currentCell.specialType === 'double'
+      const { adultDuration, childDuration } = getTimerDurations()
 
-      // Kids always get 10 seconds, adults get 5 or 3 (fast cell)
-      const timerDuration = currentPlayer.isChild ? 10 : (isFast ? 3 : 5)
+      // Use settings for timer duration, fast cell reduces by 2 seconds
+      const baseDuration = currentPlayer.isChild ? childDuration : adultDuration
+      const timerDuration = isFast ? Math.max(1, baseDuration - 2) : baseDuration
 
       return {
         ...state,
@@ -108,9 +119,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const currentCell = state.board[currentPlayer.position]
       const isFast = currentCell.type === 'special' && currentCell.specialType === 'fast'
       const isDouble = currentCell.type === 'special' && currentCell.specialType === 'double'
+      const { adultDuration, childDuration } = getTimerDurations()
 
-      // Kids always get 10 seconds, adults get 5 or 3 (fast cell)
-      const timerDuration = currentPlayer.isChild ? 10 : (isFast ? 3 : 5)
+      // Use settings for timer duration, fast cell reduces by 2 seconds
+      const baseDuration = currentPlayer.isChild ? childDuration : adultDuration
+      const timerDuration = isFast ? Math.max(1, baseDuration - 2) : baseDuration
 
       return {
         ...state,

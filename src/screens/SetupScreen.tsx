@@ -19,6 +19,8 @@ export interface SetupScreenProps {
 }
 
 const SHOW_QUESTION_IMMEDIATELY_KEY = 'showQuestionImmediately'
+const ADULT_TIMER_DURATION_KEY = 'adultTimerDuration'
+const CHILD_TIMER_DURATION_KEY = 'childTimerDuration'
 
 export default function SetupScreen({
   onNavigate,
@@ -37,6 +39,14 @@ export default function SetupScreen({
   const [showQuestionImmediately, setShowQuestionImmediately] = useState(() => {
     return localStorage.getItem(SHOW_QUESTION_IMMEDIATELY_KEY) === 'true'
   })
+  const [adultTimerDuration, setAdultTimerDuration] = useState(() => {
+    const saved = localStorage.getItem(ADULT_TIMER_DURATION_KEY)
+    return saved ? parseInt(saved, 10) : 5
+  })
+  const [childTimerDuration, setChildTimerDuration] = useState(() => {
+    const saved = localStorage.getItem(CHILD_TIMER_DURATION_KEY)
+    return saved ? parseInt(saved, 10) : 10
+  })
   const [editingPlayerIndex, setEditingPlayerIndex] = useState<number | null>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
 
@@ -50,6 +60,18 @@ export default function SetupScreen({
   const handleShowQuestionImmediatelyChange = (checked: boolean) => {
     setShowQuestionImmediately(checked)
     localStorage.setItem(SHOW_QUESTION_IMMEDIATELY_KEY, String(checked))
+  }
+
+  const handleAdultTimerChange = (value: number) => {
+    const newValue = Math.max(1, Math.min(60, value))
+    setAdultTimerDuration(newValue)
+    localStorage.setItem(ADULT_TIMER_DURATION_KEY, String(newValue))
+  }
+
+  const handleChildTimerChange = (value: number) => {
+    const newValue = Math.max(1, Math.min(60, value))
+    setChildTimerDuration(newValue)
+    localStorage.setItem(CHILD_TIMER_DURATION_KEY, String(newValue))
   }
 
   // Close emoji picker when clicking outside
@@ -243,6 +265,34 @@ export default function SetupScreen({
               : 'Питання приховане (???), після кнопки - зворотний відлік 3-2-1'}
           </span>
         </label>
+
+        <div className="timer-settings">
+          <div className="timer-setting">
+            <label htmlFor="adult-timer">Час для дорослих (сек)</label>
+            <input
+              id="adult-timer"
+              type="number"
+              min="1"
+              max="60"
+              value={adultTimerDuration}
+              onChange={e => handleAdultTimerChange(parseInt(e.target.value, 10) || 5)}
+            />
+          </div>
+          <div className="timer-setting">
+            <label htmlFor="child-timer">Час для дітей (сек)</label>
+            <input
+              id="child-timer"
+              type="number"
+              min="1"
+              max="60"
+              value={childTimerDuration}
+              onChange={e => handleChildTimerChange(parseInt(e.target.value, 10) || 10)}
+            />
+          </div>
+          <span className="setting-hint timer-hint">
+            Швидка клітинка зменшує час на 2 секунди
+          </span>
+        </div>
       </div>
 
       <button
