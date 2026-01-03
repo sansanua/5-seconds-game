@@ -61,3 +61,14 @@ export interface GameState {
 }
 
 export type Screen = 'start' | 'setup' | 'game' | 'victory'
+
+export interface SavedGame {
+  players: Player[]
+  currentPlayerIndex: number
+  board: Cell[]
+  boardLength: number
+  playerStats: Record<string, PlayerStats>
+  skipNextTurn: number[]
+  difficultyLevel: DifficultyLevel
+  savedAt: number
+}

@@ -1,6 +1,6 @@
 // src/hooks/useGameState.ts
 import { useReducer, useCallback } from 'react'
-import type { GameState, Player, Question, SwapInfo, PlayerStats, DifficultyLevel } from '../types'
+import type { GameState, Player, Question, SwapInfo, PlayerStats, DifficultyLevel, SavedGame } from '../types'
 import { DIFFICULTY_RANGES } from '../types'
 import { generateBoard, shuffle } from '../utils/game'
 import { questions as allQuestions } from '../data/questions'
@@ -509,11 +509,66 @@ function createInitialState(players: Player[], boardLength: number, difficultyLe
   }
 }
 
-export function useGameState(players: Player[], boardLength: number, difficultyLevel: DifficultyLevel = 'medium') {
+function createStateFromSaved(savedGame: SavedGame): GameState {
+  const { filtered, kidsFiltered } = getFilteredQuestions(savedGame.difficultyLevel)
+  const shuffledQuestions = shuffle([...filtered])
+  const shuffledKidsQuestions = shuffle([...kidsFiltered])
+
+  // Get first question for current player
+  const currentPlayer = savedGame.players[savedGame.currentPlayerIndex]
+  let firstQuestion: Question
+  let restQuestions: Question[]
+  let restKidsQuestions: Question[]
+
+  if (currentPlayer.isChild && shuffledKidsQuestions.length > 0) {
+    [firstQuestion, ...restKidsQuestions] = shuffledKidsQuestions
+    restQuestions = shuffledQuestions
+  } else if (shuffledQuestions.length > 0) {
+    [firstQuestion, ...restQuestions] = shuffledQuestions
+    restKidsQuestions = shuffledKidsQuestions
+  } else {
+    // Fallback: use all questions
+    const allShuffled = shuffle([...allQuestions])
+    const allKidsShuffled = shuffle([...allQuestions.filter(q => q.forKids)])
+    if (currentPlayer.isChild && allKidsShuffled.length > 0) {
+      [firstQuestion, ...restKidsQuestions] = allKidsShuffled
+      restQuestions = allShuffled
+    } else {
+      [firstQuestion, ...restQuestions] = allShuffled
+      restKidsQuestions = allKidsShuffled
+    }
+  }
+
+  return {
+    players: savedGame.players,
+    currentPlayerIndex: savedGame.currentPlayerIndex,
+    board: savedGame.board,
+    boardLength: savedGame.boardLength,
+    phase: 'waiting',
+    currentQuestion: firstQuestion,
+    timerDuration: 5,
+    skipNextTurn: savedGame.skipNextTurn,
+    doubleQuestion: false,
+    questionsQueue: restQuestions,
+    kidsQuestionsQueue: restKidsQuestions,
+    winner: null,
+    swapInfo: null,
+    playerStats: savedGame.playerStats,
+    difficultyLevel: savedGame.difficultyLevel
+  }
+}
+
+export function useGameState(
+  players: Player[],
+  boardLength: number,
+  difficultyLevel: DifficultyLevel = 'medium',
+  savedGame?: SavedGame
+) {
   const [state, dispatch] = useReducer(
     gameReducer,
-    { players, boardLength, difficultyLevel },
-    ({ players, boardLength, difficultyLevel }) => createInitialState(players, boardLength, difficultyLevel)
+    { players, boardLength, difficultyLevel, savedGame },
+    ({ players, boardLength, difficultyLevel, savedGame }) =>
+      savedGame ? createStateFromSaved(savedGame) : createInitialState(players, boardLength, difficultyLevel)
   )
 
   const startCountdown = useCallback(() => dispatch({ type: 'START_COUNTDOWN' }), [])

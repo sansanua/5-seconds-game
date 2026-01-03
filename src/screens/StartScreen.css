@@ -29,6 +29,26 @@
   padding: 16px 48px;
 }
 
+.start-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.btn-continue {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 32px;
+  font-size: 1.2rem;
+}
+
+.continue-info {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
 .settings-buttons {
   position: absolute;
   top: 20px;

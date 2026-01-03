@@ -1,8 +1,9 @@
 // src/screens/GameScreen.tsx
-import { useCallback, useEffect, useState } from 'react'
-import type { Screen, Player, Cell, PlayerStats, DifficultyLevel } from '../types'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Screen, Player, Cell, PlayerStats, DifficultyLevel, SavedGame } from '../types'
 import { useGameState } from '../hooks/useGameState'
 import { useFullscreen } from '../hooks/useFullscreen'
+import { saveGame, clearSavedGame } from '../utils/storage'
 import GameBoard from '../components/GameBoard'
 import Timer from '../components/Timer'
 import SetupScreen from './SetupScreen'
@@ -16,10 +17,12 @@ interface Props {
   players: Player[]
   boardLength: number
   difficultyLevel: DifficultyLevel
+  savedGame?: SavedGame | null
   onNavigate: (screen: Screen) => void
   onGameEnd: (winner: Player, board: Cell[], playerStats: Record<string, PlayerStats>) => void
   onUpdatePlayers: (players: Player[]) => void
   onChangeDifficulty: (level: DifficultyLevel) => void
+  onSavedGameLoaded?: () => void
 }
 
 const SPECIAL_MESSAGES: Record<string, string> = {
@@ -31,9 +34,41 @@ const SPECIAL_MESSAGES: Record<string, string> = {
   bonus: '🎁 Бонус +1!'
 }
 
-export default function GameScreen({ players, boardLength, difficultyLevel, onNavigate, onGameEnd, onUpdatePlayers, onChangeDifficulty }: Props) {
-  const { state, startCountdown, countdownEnd, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap, updatePlayers, changeDifficulty } = useGameState(players, boardLength, difficultyLevel)
+export default function GameScreen({ players, boardLength, difficultyLevel, savedGame, onNavigate, onGameEnd, onUpdatePlayers, onChangeDifficulty, onSavedGameLoaded }: Props) {
+  const { state, startCountdown, countdownEnd, startTimer, timerEnd, answerCorrect, answerWrong, skipQuestion, selectSwapPlayer, declineSwap, dismissSwap, updatePlayers, changeDifficulty } = useGameState(players, boardLength, difficultyLevel, savedGame || undefined)
   const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
+  const savedGameLoadedRef = useRef(false)
+
+  // Notify parent when saved game has been loaded
+  useEffect(() => {
+    if (savedGame && !savedGameLoadedRef.current) {
+      savedGameLoadedRef.current = true
+      onSavedGameLoaded?.()
+    }
+  }, [savedGame, onSavedGameLoaded])
+
+  // Auto-save game state when phase becomes 'waiting'
+  useEffect(() => {
+    if (state.phase === 'waiting' && !state.winner) {
+      saveGame({
+        players: state.players,
+        currentPlayerIndex: state.currentPlayerIndex,
+        board: state.board,
+        boardLength: state.boardLength,
+        playerStats: state.playerStats,
+        skipNextTurn: state.skipNextTurn,
+        difficultyLevel: state.difficultyLevel,
+        savedAt: Date.now()
+      })
+    }
+  }, [state.phase, state.winner, state.players, state.currentPlayerIndex, state.board, state.boardLength, state.playerStats, state.skipNextTurn, state.difficultyLevel])
+
+  // Clear saved game when there's a winner
+  useEffect(() => {
+    if (state.winner) {
+      clearSavedGame()
+    }
+  }, [state.winner])
 
   // Settings modal state
   const [showSettings, setShowSettings] = useState(false)
